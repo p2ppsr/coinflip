@@ -1,0 +1,78 @@
+@import './styles/styleVariables.scss';
+
+html,
+body {
+  margin: 0;
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  background: $backgroundColor;
+}
+
+h1 {
+  margin: 0;
+  color: $textColor;
+}
+
+p {
+  color: $textColor;
+}
+
+.flex {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+
+  .button {
+    flex: 1;
+
+    &:not(:last-child) {
+      margin-right: 1rem;
+    }
+  }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.coinflipContainer {
+  display: flex;
+  justify-content: center;
+  // width: 20rem;
+  // height: 20rem;
+
+  img {
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    max-width: 15rem;
+    max-height: 15rem;
+  }
+}
+
+.coinFlipAnimation {
+  width: 20rem;
+  height: 20rem;
+}
+
+.flipButton {
+  width: 15rem;
+  height: 4rem;
+  background: $accentColor !important;
+}
+
+.textInput {
+  background: transparent;
+  width: 15rem;
+  height: 2.5rem;
+  border: 1px solid $textColor;
+  border-radius: $borderRadius;
+  margin-top: 1rem;
+  color: white;
+  padding-left: 0.5rem;
+}

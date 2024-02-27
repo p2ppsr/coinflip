@@ -1,0 +1,38 @@
+@import '../../styles/styleVariables.scss';
+
+.userInput {
+  width: 15rem;
+
+  * {
+    color:$accentColor !important;
+    border-color: $accentColor !important;
+  }
+
+  svg {
+    display: none;
+  }
+}
+
+#satoshiAmountInput {
+  background: transparent;
+  border:1px solid $textColor;
+  padding:1rem;
+  border-radius: $borderRadius;
+  color:$textColor;
+  font-size: 1rem;
+  width:13rem;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+#inviteButton {
+  width:15rem;
+  margin-top:2rem;
+  height:56px;
+}
+
+.loadingSpinner {
+  fill:black !important;
+}
