@@ -1,171 +1,97 @@
-import { Autocomplete, Button, CircularProgress, TextField } from '@mui/material'
-import { useEffect, useState } from 'react'
-import useAsyncEffect from 'use-async-effect'
-import { sleep } from '../../utils'
-import './Challenge.scss'
+// Dependencies
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button, CircularProgress } from '@mui/material'
 import { Identity, IdentitySearchField } from 'metanet-identity-react'
+
+// Utils
+import { objectHasEmptyValues, sleep } from '../../utils/utils'
+
+// Styles
 import { theme } from '../../main'
+import './Challenge.scss'
 
-export interface User {
-  name: string | null
-  id: string | null
-}
-
-interface InputValues {
-  user: User
-  amount: number | null
-}
-
-export const exampleUsers = [
-  { name: 'Dan', id: '1' },
-  { name: 'Ty', id: '2' },
-  { name: 'Brayden', id: '3' },
-  { name: 'Mike', id: '4' },
-  { name: 'Tone', id: '5' },
-  { name: 'Bob', id: '6' },
-  { name: 'Scott', id: '7' }
-]
+// Stores
+import { useChallengeStore } from '../../stores/stores'
 
 export const Challenge = () => {
   const navigate = useNavigate()
 
   // State ============================================================
-  const [open, setOpen] = useState(false)
-  const [options, setOptions] = useState<User[]>([])
-  const [inputValues, setInputValues] = useState<InputValues>({
-    user: { name: null, id: null },
-    amount: null
-  })
-  const usersLoading = open && options.length === 0
+
+  // const [formValues, setFormValues] = useState<InputValues>({
+  //   identity: null,
+  //   amount: null,
+  //   headsOrTails: null
+  // })
+
+  const [challengeValues, setChallengeValues] = useChallengeStore((state: any) => [
+    state.challengeValues,
+    state.setChallengeValues
+  ])
 
   const [isChallenging, setIsChallenging] = useState(false)
-
-  const [selection, setSelection] = useState<0 | 1 | null>(null)
-
-  const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null)
-
-  // Lifecycle ========================================================
-
-  useAsyncEffect(async () => {
-    let active = true
-
-    if (!usersLoading) return undefined
-
-    await sleep(1000)
-
-    if (active) {
-      setOptions(
-        exampleUsers.filter(
-          user => user.name?.toLowerCase() === inputValues.user.name?.toLowerCase()
-        )
-      )
-    }
-
-    return () => {
-      active = false
-    }
-  }, [usersLoading, inputValues.user.name])
-
-  useEffect(() => {
-    if (!open) {
-      setOptions([])
-    }
-  }, [open, inputValues.user.name])
 
   // Handlers =========================================================
 
   const handleChallenge = async () => {
     setIsChallenging(true)
+    // TODO: send invitation here
     await sleep(2000)
     navigate('/coinflip')
   }
 
-  const handleSelection = (choice: 0 | 1) => {
-    setSelection(choice)
+  const handleHeadsOrTailsSelection = (value: 0 | 1) => {
+    if (challengeValues.headsOrTails === value) {
+      setChallengeValues({ ...challengeValues, headsOrTails: null })
+    } else {
+      setChallengeValues({ ...challengeValues, headsOrTails: value })
+    }
   }
 
   return (
     <div>
       <div>
         <p>Enter a user to challenge:</p>
-        <Autocomplete
-          className="userInput"
-          open={open && options.length > 0}
-          onOpen={() => setOpen(true)}
-          onClose={() => setOpen(false)}
-          isOptionEqualToValue={(option, value) => option.id === value.id}
-          getOptionLabel={option => option.name || ''}
-          options={options}
-          loading={usersLoading}
-          inputValue={inputValues.user.name || ''}
-          onInputChange={(event, newInputValue) => {
-            setInputValues({ ...inputValues, user: { ...inputValues.user, name: newInputValue } })
+        <IdentitySearchField
+          onIdentitySelected={identity => {
+            setChallengeValues({ ...challengeValues, identity: identity })
+            console.log(identity)
           }}
-          // onChange={(event, newValue) => {
-          //   setInputValues({ ...inputValues, user: newValue || { name: null, id: null } })
-          // }}
-          renderInput={params => (
-            <TextField
-              {...params}
-              label="User"
-              InputProps={{
-                ...params.InputProps
-              }}
-            />
-          )}
+          theme={theme}
         />
-        <div>
-          <IdentitySearchField
-            onIdentitySelected={identity => {
-              setSelectedIdentity(identity)
-            }}
-            theme={theme}
-          />
-          {selectedIdentity && (
-            <div>
-              <h2>Selected Identity</h2>
-              <p>Name: {selectedIdentity.name}</p>
-              <p>Identity Key: {selectedIdentity.identityKey}</p>
-            </div>
-          )}
-        </div>
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div className="fieldContainer">
         <p>Enter an amount to bet:</p>
-        <TextField
-          id="outlined-basic"
-          label="Amount"
-          variant="outlined"
+        <input
           className="userInput"
           type="number"
-          value={inputValues.amount || ''}
-          onChange={e =>
-            setInputValues({
-              ...inputValues,
+          onChange={e => {
+            setChallengeValues({
+              ...challengeValues,
               amount: e.target.value ? parseInt(e.target.value, 10) : null
             })
-          }
+          }}
         />
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div className="fieldContainer">
         <p>Heads or tails?</p>
         <div className="flex" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
-            className="button"
-            variant={selection === 0 ? 'contained' : 'outlined'}
-            onClick={() => handleSelection(0)}
-            style={{ flex: 1, marginRight: '0.5rem' }} // Ensure the button takes full width and add margin
+            className="headsOrTailsButton"
+            variant={challengeValues.headsOrTails === 0 ? 'contained' : 'outlined'}
+            onClick={() => handleHeadsOrTailsSelection(0)}
+            disableRipple
           >
             Heads
           </Button>
           <Button
-            className="button"
-            variant={selection === 1 ? 'contained' : 'outlined'}
-            onClick={() => handleSelection(1)}
-            style={{ flex: 1 }} // Ensure the button takes full width
+            className="headsOrTailsButton"
+            variant={challengeValues.headsOrTails === 1 ? 'contained' : 'outlined'}
+            onClick={() => handleHeadsOrTailsSelection(1)}
+            disableRipple
           >
             Tails
           </Button>
@@ -174,15 +100,11 @@ export const Challenge = () => {
 
       <Button
         variant="contained"
-        id="inviteButton"
-        disabled={inputValues.user.name === null || inputValues.amount === null}
+        className="actionButton"
+        disabled={objectHasEmptyValues(challengeValues)}
         onClick={handleChallenge}
       >
-        {isChallenging ? (
-          <CircularProgress className="loadingSpinner" color="secondary" />
-        ) : (
-          'Invite'
-        )}
+        {isChallenging ? <CircularProgress className="loadingSpinner" color="info" /> : 'Invite'}
       </Button>
     </div>
   )

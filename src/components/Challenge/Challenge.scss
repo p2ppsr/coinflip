@@ -1,38 +1,54 @@
 @import '../../styles/styleVariables.scss';
 
-.userInput {
-  width: 15rem;
-
-  * {
-    color:$accentColor !important;
-    border-color: $accentColor !important;
-  }
-
-  svg {
-    display: none;
-  }
+.fieldContainer {
+  margin-top: 1rem;
 }
 
-#satoshiAmountInput {
-  background: transparent;
-  border:1px solid $textColor;
-  padding:1rem;
-  border-radius: $borderRadius;
-  color:$textColor;
+.userInput {
+  width: 290px;
+  background: white;
+  border: none;
+  height: 56px;
+  padding-left: 0.5rem;
   font-size: 1rem;
-  width:13rem;
+  transition: 0.2s;
 
   &:focus {
     outline: none;
   }
+
+  &:hover {
+    filter: brightness(0.925);
+  }
+}
+
+#satoshiAmountInput {
+  padding: 1rem;
+  color: $textColor;
+  font-size: 1rem;
+  width: 13rem;
+  background: blue !important;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:hover {
+    background: blue !important;
+  }
 }
 
 #inviteButton {
-  width:15rem;
-  margin-top:2rem;
-  height:56px;
+  width: 100%;
+  margin-top: 2rem;
+  height: 56px;
 }
 
 .loadingSpinner {
-  fill:black !important;
+  fill: black !important;
+}
+
+// override padding
+.MuiBox-root {
+  padding: 0 !important;
 }

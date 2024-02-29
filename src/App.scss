@@ -16,6 +16,11 @@ h1 {
   color: $textColor;
 }
 
+h2 {
+  color:rgb(237, 220, 86);
+  font-style: italic;
+}
+
 p {
   color: $textColor;
 }
@@ -24,14 +29,20 @@ p {
   display: flex;
   justify-content: space-between;
   width: 100%;
+}
 
-  .button {
-    flex: 1;
+.headsOrTailsButton {
+  flex: 1;
 
-    &:not(:last-child) {
-      margin-right: 1rem;
-    }
+  &:not(:last-child) {
+    margin-right: 1rem;
   }
+}
+
+.actionButton {
+  width: 100%;
+  height: 4rem;
+  margin-top:1.5rem !important;
 }
 
 .container {
@@ -39,40 +50,4 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-}
-
-.coinflipContainer {
-  display: flex;
-  justify-content: center;
-  // width: 20rem;
-  // height: 20rem;
-
-  img {
-    aspect-ratio: 1/1;
-    object-fit: cover;
-    max-width: 15rem;
-    max-height: 15rem;
-  }
-}
-
-.coinFlipAnimation {
-  width: 20rem;
-  height: 20rem;
-}
-
-.flipButton {
-  width: 15rem;
-  height: 4rem;
-  background: $accentColor !important;
-}
-
-.textInput {
-  background: transparent;
-  width: 15rem;
-  height: 2.5rem;
-  border: 1px solid $textColor;
-  border-radius: $borderRadius;
-  margin-top: 1rem;
-  color: white;
-  padding-left: 0.5rem;
 }

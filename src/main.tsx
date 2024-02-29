@@ -9,11 +9,11 @@ import { createTheme } from '@mui/material'
 export let theme = createTheme({
   palette: {
     primary: {
-      main: '#7494ea',
+      main: '#fff',
     },
-    secondary: {
-      main: '#7494ea',
-    },
+    // secondary: {
+    //   main: '#7494ea',
+    // },
     info: {
       main: '#000'
     }
