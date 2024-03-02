@@ -13,8 +13,10 @@ import tailsImage from '../../assets/tails.png'
 // Styles
 import './Coinflip.scss'
 import { useChallengeStore } from '../../stores/stores'
+import { useNavigate } from "react-router-dom"
 
 const Coinflip = () => {
+  const navigate = useNavigate()
   const coinFlipDelay = 4000
 
   // State =========================================================================
@@ -74,7 +76,7 @@ const Coinflip = () => {
                           challengeValues.identity.name
                         } has been awarded ${challengeValues.amount * 2} Satoshis.`}
                   </h1>
-                  <Button variant="contained" className="actionButton">Challenge again</Button>
+                  <Button variant="contained" className="actionButton" onClick={()=>{navigate('/')}}>Challenge again</Button>
                 </div>
               </>
             )}

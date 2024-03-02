@@ -40,7 +40,7 @@ p {
 }
 
 .actionButton {
-  width: 100%;
+  width: 300px;
   height: 4rem;
   margin-top:1.5rem !important;
 }
@@ -50,4 +50,10 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+#invitationsButton {
+  position:absolute;
+  top:1rem;
+  left:1rem;
 }

@@ -6,17 +6,25 @@ export const useAuthStore = create(set => ({
   setProfilePictureUrl: (newState: string) => set(() => ({ profilePictureUrl: newState }))
 }))
 
-interface ChallengeValues {
+export interface ChallengeValues {
   identity: Identity | null
   amount: number | null
   headsOrTails: number | null
 }
+
 export const useChallengeStore = create(set => ({
+  
+  // Values for the input form in challenge page
   challengeValues: {
     identity: null,
     amount: null,
     headsOrTails: null
   } as ChallengeValues,
 
-  setChallengeValues: (newState: string) => set(() => ({ challengeValues: newState }))
+  setChallengeValues: (newState: string) => set(() => ({ challengeValues: newState })),
+
+  hasChallenges: false,
+  setHasChallenges: (newState: boolean) => set(() => ({ hasChallenges: newState }))
+
+  
 }))
