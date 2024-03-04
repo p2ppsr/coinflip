@@ -15,6 +15,12 @@ export let theme = createTheme({
     info: {
       main: '#000'
     },
+    success: {
+      main: '#21D170'
+    },
+    error: {
+      main:'#DD4A4A'
+    }
   }
 })
 

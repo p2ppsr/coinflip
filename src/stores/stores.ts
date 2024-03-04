@@ -13,7 +13,6 @@ export interface ChallengeValues {
 }
 
 export const useChallengeStore = create(set => ({
-  
   // Values for the input form in challenge page
   challengeValues: {
     identity: null,
@@ -23,8 +22,6 @@ export const useChallengeStore = create(set => ({
 
   setChallengeValues: (newState: string) => set(() => ({ challengeValues: newState })),
 
-  hasChallenges: false,
-  setHasChallenges: (newState: boolean) => set(() => ({ hasChallenges: newState }))
-
-  
+  challenges: [],
+  setChallenges: (newState: any) => set(() => ({ challenges: newState }))
 }))
