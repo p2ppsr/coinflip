@@ -41,34 +41,34 @@ export const Challenge = () => {
     state.setChallenges
   ])
 
-  const checkChallenges = async () => {
-    const challenges = await tokenator.listMessages({
-      messageBox: 'coinflip_inbox'
-    })
+  // const checkChallenges = async () => {
+  //   const challenges = await tokenator.listMessages({
+  //     messageBox: 'coinflip_inbox'
+  //   })
 
-    setChallenges(challenges)
-  }
+  //   setChallenges(challenges)
+  // }
 
-  // Lifecycle ======================================================
+  // // Lifecycle ======================================================
 
-  const challengePollTime = 4000 // poll challenges every 4s
-  useAsyncEffect(async () => {
-    // Check challenges on load
-    checkChallenges()
+  // const challengePollTime = 4000 // poll challenges every 4s
+  // useAsyncEffect(async () => {
+  //   // Check challenges on load
+  //   checkChallenges()
 
-    // Poll for new challenges
-    const interval = setInterval(async () => {
-      try {
-        checkChallenges()
-      } catch (e) {
-        console.log('no tokenator messages found')
-      }
-    }, challengePollTime)
+  //   // Poll for new challenges
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       checkChallenges()
+  //     } catch (e) {
+  //       console.log('no tokenator messages found')
+  //     }
+  //   }, challengePollTime)
 
-    return () => {
-      clearInterval(interval)
-    }
-  }, [])
+  //   return () => {
+  //     clearInterval(interval)
+  //   }
+  // }, [])
 
   // Handlers =========================================================
 

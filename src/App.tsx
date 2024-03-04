@@ -16,16 +16,42 @@ import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
 import { useChallengeStore } from './stores/stores'
 import useAsyncEffect from 'use-async-effect'
-import tokenator from "@babbage/tokenator"
+import tokenator from '@babbage/tokenator'
 
 const App = () => {
-
   const [challenges, setChallenges] = useChallengeStore((state: any) => [
     state.challenges,
     state.setChallenges
   ])
 
-  
+  const checkChallenges = async () => {
+    const challenges = await tokenator.listMessages({
+      messageBox: 'coinflip_inbox'
+    })
+
+    setChallenges(challenges)
+  }
+
+  // Lifecycle ======================================================
+
+  const challengePollTime = 4000 // poll challenges every 4s
+  useAsyncEffect(async () => {
+    // Check challenges on load
+    checkChallenges()
+
+    // Poll for new challenges
+    const interval = setInterval(async () => {
+      try {
+        checkChallenges()
+      } catch (e) {
+        console.log('no tokenator messages found')
+      }
+    }, challengePollTime)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   return (
     <BrowserRouter>
