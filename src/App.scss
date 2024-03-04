@@ -27,7 +27,7 @@ p {
 
 .flex {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
   width: 100%;
 }
 
@@ -50,10 +50,13 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding:1rem;
 }
 
-#invitationsButton {
+#myChallengesButton {
   position:absolute;
   top:1rem;
   left:1rem;
+  border: 1px solid goldenrod;
+  color:gold
 }

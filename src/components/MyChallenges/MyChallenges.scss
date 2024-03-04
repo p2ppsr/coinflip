@@ -1,0 +1,41 @@
+@import '../../styles/styleVariables.scss';
+
+.myChallengesContainer {
+  h1 {
+    font-weight: 100;
+    font-size: 3.5rem;
+  }
+
+  table {
+    margin-top: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: $borderRadius;
+
+    th {
+      color: $textColor;
+      text-align: left;
+      width: 8rem;
+    }
+
+    td {
+      color: $textColor;
+    }
+  }
+
+  button {
+    width: 30px !important;
+  }
+}
+
+.myChallengesItem {
+  // display:flex;
+  // gap:.5rem;
+
+  // border:2px solid rgba(255,255,255,0.3);
+  // border-radius: $borderRadius;
+  // // width:100%;
+  // margin:1rem;
+  // padding:.5rem;
+}

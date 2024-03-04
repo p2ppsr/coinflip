@@ -4,6 +4,6 @@ declare module '@babbage/react-prompt' {
 }
 
 declare module '@babbage/tokenator' {
-  const Tokenator: any
-  export default Tokenator
+  const tokenator: any
+  export default tokenator
 }

@@ -3,7 +3,6 @@ import Tokenator from '@babbage/tokenator'
 import { Button, CircularProgress } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
@@ -13,11 +12,17 @@ import { theme } from '../../main'
 import './Challenge.scss'
 
 // Stores
+import { toast } from 'react-toastify'
 import useAsyncEffect from 'use-async-effect'
 import { useChallengeStore } from '../../stores/stores'
-import { toast } from 'react-toastify'
+
+// Assets
+import { FaBell } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
 
 export const Challenge = () => {
+  const navigate = useNavigate()
+
   const tokenator = new Tokenator({
     peerServHost: 'https://staging-peerserv.babbage.systems' // TODO: use .env to set this dynamically
   })
@@ -31,10 +36,39 @@ export const Challenge = () => {
 
   const [isChallenging, setIsChallenging] = useState(false)
 
-  const [hasChallenges, setHasChallenges] = useChallengeStore((state: any) => [
-    state.hasChallenges,
-    state.setHasChallenges
+  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+    state.challenges,
+    state.setChallenges
   ])
+
+  const checkChallenges = async () => {
+    const challenges = await tokenator.listMessages({
+      messageBox: 'coinflip_inbox'
+    })
+
+    setChallenges(challenges)
+  }
+
+  // Lifecycle ======================================================
+
+  const challengePollTime = 4000 // poll challenges every 4s
+  useAsyncEffect(async () => {
+    // Check challenges on load
+    checkChallenges()
+
+    // Poll for new challenges
+    const interval = setInterval(async () => {
+      try {
+        checkChallenges()
+      } catch (e) {
+        console.log('no tokenator messages found')
+      }
+    }, challengePollTime)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   // Handlers =========================================================
 
@@ -49,7 +83,8 @@ export const Challenge = () => {
           message: `You have a new coinflip challenge from ${challengeValues.identity.name}`,
           headsOrTails: challengeValues.headsOrTails,
           amount: challengeValues.amount,
-          identityKey: challengeValues.identity.identityKey
+          identityKey: challengeValues.identity.identityKey,
+          sender: challengeValues.identity.name
         }
       })
       // navigate('/coinflip')
@@ -85,24 +120,23 @@ export const Challenge = () => {
     }
   }
 
-  // Lifecycle ======================================================
-
-  useAsyncEffect(async () => {
-    console.log('load')
-    try {
-      const messages = await tokenator.listMessages({
-        messageBox: 'coinflip_inbox'
-      })
-      console.log(JSON.parse(messages[0].body))
-      setHasChallenges(true)
-    } catch (e) {
-      console.log('no tokenator messages found')
-      setHasChallenges(false)
-    }
-  }, [])
-
   return (
     <div>
+      {challenges.length !== 0 && (
+        <>
+          <Button
+            variant="outlined"
+            id="myChallengesButton"
+            onClick={() => {
+              navigate('/my_challenges')
+            }}
+          >
+            <FaBell style={{ marginRight: '.5rem' }} />
+            My Challenges
+          </Button>
+        </>
+      )}
+
       {/* TODO: Manually clear tokenator messages; dev purposes only */}
       <button className="button" onClick={clearTokenatorMessages}>
         Clear Tokenator Messages

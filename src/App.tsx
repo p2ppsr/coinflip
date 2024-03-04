@@ -15,13 +15,13 @@ import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
 import { useChallengeStore } from './stores/stores'
+import useAsyncEffect from 'use-async-effect'
+import tokenator from '@babbage/tokenator'
 
 const App = () => {
-  // const navigate = useNavigate()
-
-  const [hasChallenges, setHasChallenges] = useChallengeStore((state: any) => [
-    state.hasChallenges,
-    state.setHasChallenges
+  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+    state.challenges,
+    state.setChallenges
   ])
 
   return (
@@ -39,20 +39,7 @@ const App = () => {
         theme="light"
         transition={Bounce}
       />
-      {hasChallenges && (
-        <>
-          <Button
-            variant="contained"
-            id="invitationsButton"
-            onClick={() => {
-              window.location.href = '/my_challenges'
-            }}
-            color="primary"
-          >
-            My Challenges
-          </Button>
-        </>
-      )}
+
       <div className="container" style={{ marginTop: '4rem' }}>
         <img src={babbageLogo} width="150" />
         <img
