@@ -8,34 +8,39 @@
 
   table {
     margin-top: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 50vw;
+    max-width: 30rem;
     padding: 0.5rem;
     border-radius: $borderRadius;
 
-    th {
+    thead {
       color: $textColor;
       text-align: left;
-      width: 8rem;
+      // Ensure thead is positioned relatively to contain the absolute pseudo-element.
+      position: relative;
+      // Create a pseudo-element for the divider.
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0; // Align at the bottom of the thead.
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3); // Adjust the color accordingly.
+        width: 100%; // Span the full width.
+      }
+    }
+
+    tbody {
+      tr:first-child {
+        td {
+          padding-top: .5rem; // Adjust the value as needed
+        }
+      }
     }
 
     td {
       color: $textColor;
     }
   }
-
-  button {
-    width: 30px !important;
-  }
-}
-
-.myChallengesItem {
-  // display:flex;
-  // gap:.5rem;
-
-  // border:2px solid rgba(255,255,255,0.3);
-  // border-radius: $borderRadius;
-  // // width:100%;
-  // margin:1rem;
-  // padding:.5rem;
 }

@@ -9,20 +9,53 @@ import 'react-toastify/dist/ReactToastify.css'
 import './App.scss'
 
 // Assets
-import { Button } from '@mui/material'
 import { Bounce, ToastContainer } from 'react-toastify'
 import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
-import { useChallengeStore } from './stores/stores'
 import useAsyncEffect from 'use-async-effect'
-import tokenator from '@babbage/tokenator'
+import { tokenator } from "./utils/tokenatorUtils"
+import { useChallengeStore } from "./stores/stores"
 
 const App = () => {
+
+  // State ============================================================
+
   const [challenges, setChallenges] = useChallengeStore((state: any) => [
     state.challenges,
     state.setChallenges
   ])
+  
+  // Handlers =========================================================
+
+  const checkChallenges = async () => {
+    const challenges = await tokenator.listMessages({
+      messageBox: 'coinflip_inbox'
+    })
+
+    setChallenges(challenges)
+  }
+
+  // Lifecycle ======================================================
+
+  const challengePollTime = 4000 // poll challenges every 4s
+  useAsyncEffect(async () => {
+    // Check challenges on load
+    checkChallenges()
+
+    // Poll for new challenges
+    const interval = setInterval(async () => {
+      try {
+        checkChallenges()
+      } catch (e) {
+        console.log('no tokenator messages found')
+      }
+    }, challengePollTime)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   return (
     <BrowserRouter>
@@ -40,7 +73,7 @@ const App = () => {
         transition={Bounce}
       />
 
-      <div className="container" style={{ marginTop: '4rem' }}>
+      <div className="container" style={{ marginTop: '6vh' }}>
         <img src={babbageLogo} width="150" />
         <img
           src={coinFlipLogo}

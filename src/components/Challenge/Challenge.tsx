@@ -3,6 +3,8 @@ import Tokenator from '@babbage/tokenator'
 import { Button, CircularProgress } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import useAsyncEffect from 'use-async-effect'
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
@@ -13,19 +15,14 @@ import './Challenge.scss'
 
 // Stores
 import { toast } from 'react-toastify'
-import useAsyncEffect from 'use-async-effect'
 import { useChallengeStore } from '../../stores/stores'
 
 // Assets
 import { FaBell } from 'react-icons/fa'
-import { useNavigate } from 'react-router-dom'
+import { clearAllTokenatorMessages, tokenator } from "../../utils/tokenatorUtils"
 
 export const Challenge = () => {
   const navigate = useNavigate()
-
-  const tokenator = new Tokenator({
-    peerServHost: 'https://staging-peerserv.babbage.systems' // TODO: use .env to set this dynamically
-  })
 
   // State ============================================================
 
@@ -41,35 +38,6 @@ export const Challenge = () => {
     state.setChallenges
   ])
 
-  const checkChallenges = async () => {
-    const challenges = await tokenator.listMessages({
-      messageBox: 'coinflip_inbox'
-    })
-
-    setChallenges(challenges)
-  }
-
-  // Lifecycle ======================================================
-
-  const challengePollTime = 4000 // poll challenges every 4s
-  useAsyncEffect(async () => {
-    // Check challenges on load
-    checkChallenges()
-
-    // Poll for new challenges
-    const interval = setInterval(async () => {
-      try {
-        checkChallenges()
-      } catch (e) {
-        console.log('no tokenator messages found')
-      }
-    }, challengePollTime)
-
-    return () => {
-      clearInterval(interval)
-    }
-  }, [])
-
   // Handlers =========================================================
 
   const handleChallenge = async () => {
@@ -84,10 +52,9 @@ export const Challenge = () => {
           headsOrTails: challengeValues.headsOrTails,
           amount: challengeValues.amount,
           identityKey: challengeValues.identity.identityKey,
-          sender: challengeValues.identity.name
+          sender: challengeValues.identity.name,
         }
       })
-      // navigate('/coinflip')
       toast.success(`Your challenge has been sent to ${challengeValues.identity.name}`)
     } catch (e) {
       console.log(e)
@@ -101,23 +68,6 @@ export const Challenge = () => {
     // Set equal to null if same selection is clicked again, or switch to other value
     const isEqualToPrevValue = challengeValues.headsOrTails === value
     setChallengeValues({ ...challengeValues, headsOrTails: isEqualToPrevValue ? null : value })
-  }
-
-  // TODO: Dev purposes only
-  const clearTokenatorMessages = async () => {
-    try {
-      const messages = await tokenator.listMessages({
-        messageBox: 'coinflip_inbox'
-      })
-
-      await tokenator.acknowledgeMessage({
-        messageIds: messages.map((x: any) => x.messageId)
-      })
-
-      console.log('tokenator inbox cleared')
-    } catch (e) {
-      console.log('no tokenator messages to clear')
-    }
   }
 
   return (
@@ -138,9 +88,9 @@ export const Challenge = () => {
       )}
 
       {/* TODO: Manually clear tokenator messages; dev purposes only */}
-      <button className="button" onClick={clearTokenatorMessages}>
+      {/* <button className="button" onClick={clearAllTokenatorMessages}>
         Clear Tokenator Messages
-      </button>
+      </button> */}
 
       <div>
         <p>Enter a user to challenge:</p>

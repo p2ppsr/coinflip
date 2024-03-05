@@ -19,7 +19,14 @@ export let theme = createTheme({
       main: '#21D170'
     },
     error: {
-      main:'#DD4A4A'
+      main: '#DD4A4A'
+    }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: { minWidth: 0 }
+      }
     }
   }
 })
