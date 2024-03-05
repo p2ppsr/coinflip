@@ -33,19 +33,19 @@ export let theme = createTheme({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   // <React.StrictMode>
-  <BabbagePrompt
-    customPrompt
-    appName="Coinflip"
-    author="Project Babbage"
-    authorUrl="https://projectbabbage.com"
-    description="A coin flip demonstration of Project Babbage's micropayment capabilities"
-    appIcon={tailsImage}
-    // appImages={["/tempoBG.png"]}
-    supportedMetaNet={'universal'}
-  >
-    <ThemeProvider theme={theme}>
-      <App />
-    </ThemeProvider>
-  </BabbagePrompt>
+  // <BabbagePrompt
+  //   customPrompt
+  //   appName="Coinflip"
+  //   author="Project Babbage"
+  //   authorUrl="https://projectbabbage.com"
+  //   description="A coin flip demonstration of Project Babbage's micropayment capabilities"
+  //   appIcon={tailsImage}
+  //   // appImages={["/tempoBG.png"]}
+  //   supportedMetaNet={'universal'}
+  // >
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>
+  // </BabbagePrompt>
   // </React.StrictMode>
 )
