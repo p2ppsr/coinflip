@@ -1,23 +1,28 @@
 // Dependencies
 import { useEffect } from 'react'
 import { useChallengeStore } from '../../stores/stores'
+import { IoIosArrowBack } from 'react-icons/io'
+import { toast } from 'react-toastify'
 
 // Types
 import { Challenge } from '../../types/interfaces'
 
 // Styles
 import './MyChallenges.scss'
-import { Button } from '@mui/material'
+import { Button, Stack } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { clearTokenatorMessage } from "../../utils/tokenatorUtils"
+import useChallenges from '../../utils/useChallenges'
+
 // import { clearTokenatorMessage } from "../../utils/tokenatorUtils"
 
 const MyChallenges = () => {
   const navigate = useNavigate()
 
-  const [challenges, setChallenges] = useChallengeStore((state: any) => [
-    state.challenges,
-    state.setChallenges
+  const { challenges, clearChallenge } = useChallenges()
+
+  const [challengeValues, setChallengeValues] = useChallengeStore((state: any) => [
+    state.challengeValues,
+    state.setChallengeValues
   ])
 
   // Navigate back to home if there are no challenges
@@ -27,6 +32,7 @@ const MyChallenges = () => {
 
   return (
     <div className="container myChallengesContainer">
+      <IoIosArrowBack color="white" className="backArrow" onClick={() => navigate('/')} />
       <h1>My Challenges</h1>
       <table>
         <thead>
@@ -34,28 +40,69 @@ const MyChallenges = () => {
             <th>ID</th>
             <th>Sender</th>
             <th>Amount</th>
+            <th>They picked</th>
+            <th></th>
           </tr>
         </thead>
 
         <tbody>
           {challenges.map((challenge: Challenge, index: number) => {
-            const parsedChallengeBody = JSON.parse(challenge.body)
-            console.log(challenge)
+            const { sender, amount, senderCoinChoice } = JSON.parse(challenge.body)
 
             return (
               <tr className="myChallengesItem" key={index}>
                 <td>{challenge.messageId}</td>
-                <td>{parsedChallengeBody.sender}</td>
-                <td>{parsedChallengeBody.amount}</td>
+                <td>{sender}</td>
+                <td>{amount}</td>
+                <td>{senderCoinChoice === 0 ? 'Heads' : 'Tails'}</td>
                 <td className="flex">
-                  <Button variant="contained" color="success" style={{ marginRight: '.5rem' }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    style={{ marginRight: '.5rem' }}
+                    onClick={() => {
+                      // console.log(challenge, parsedChallengeBody)
+                      setChallengeValues({
+                        sender: sender,
+                        amount: amount,
+                        senderCoinChoice: senderCoinChoice
+                      })
+                      navigate('/coinflip')
+                    }}
+                  >
                     ✓
                   </Button>
                   <Button
                     variant="contained"
                     color="error"
                     onClick={() => {
-                      clearTokenatorMessage(challenge.messageId)
+                      // clearTokenatorMessage(challenge.messageId)
+                      toast(({ closeToast }) => (
+                        <div>
+                          <p style={{ color: 'black' }}>
+                            Are you sure you want to remove this challenge?
+                          </p>
+                          <Stack direction="row" spacing={2} justifyContent="center">
+                            <Button
+                              variant="contained"
+                              color="error"
+                              onClick={async () => {
+                                closeToast()
+                                await clearChallenge(challenge.messageId)
+                              }}
+                            >
+                              Delete
+                            </Button>
+                            <Button
+                              variant="contained"
+                              onClick={closeToast}
+                              style={{ background: 'gray', color: 'white' }}
+                            >
+                              Cancel
+                            </Button>
+                          </Stack>
+                        </div>
+                      ))
                     }}
                   >
                     X

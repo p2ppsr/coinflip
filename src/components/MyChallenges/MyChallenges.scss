@@ -9,38 +9,52 @@
   table {
     margin-top: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    width: 50vw;
-    max-width: 30rem;
+    width: 90vw;
+    max-width: 35rem;
     padding: 0.5rem;
     border-radius: $borderRadius;
 
     thead {
       color: $textColor;
       text-align: left;
-      // Ensure thead is positioned relatively to contain the absolute pseudo-element.
       position: relative;
-      // Create a pseudo-element for the divider.
+
+      // Pseudo element for border
       &::after {
         content: '';
         position: absolute;
         left: 0;
         right: 0;
         bottom: 0; // Align at the bottom of the thead.
-        border-bottom: 1px solid rgba(255, 255, 255, 0.3); // Adjust the color accordingly.
-        width: 100%; // Span the full width.
-      }
-    }
-
-    tbody {
-      tr:first-child {
-        td {
-          padding-top: .5rem; // Adjust the value as needed
-        }
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        width: 100%;
       }
     }
 
     td {
       color: $textColor;
+    }
+
+    tbody tr {
+      transition: background-color 0.3s ease;
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .backArrow {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    font-size: 3rem;
+    cursor: pointer;
+    transition: 0.1s;
+    text-shadow: 1px 1px 2px white;
+
+    &:hover {
+      transform: scale(1.1);
+      filter: brightness(0.7);
     }
   }
 }

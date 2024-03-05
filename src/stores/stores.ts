@@ -8,16 +8,18 @@ export const useAuthStore = create(set => ({
 
 export interface ChallengeValues {
   identity: Identity | null
+  sender: string | null
   amount: number | null
-  headsOrTails: number | null
+  senderCoinChoice: number | null
 }
 
 export const useChallengeStore = create(set => ({
   // Values for the input form in challenge page
   challengeValues: {
     identity: null,
+    sender: null,
     amount: null,
-    headsOrTails: null
+    senderCoinChoice: null
   } as ChallengeValues,
 
   setChallengeValues: (newState: string) => set(() => ({ challengeValues: newState })),

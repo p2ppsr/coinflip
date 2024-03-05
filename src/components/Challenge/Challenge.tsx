@@ -2,7 +2,7 @@
 import Tokenator from '@babbage/tokenator'
 import { Button, CircularProgress } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAsyncEffect from 'use-async-effect'
 
@@ -19,10 +19,12 @@ import { useChallengeStore } from '../../stores/stores'
 
 // Assets
 import { FaBell } from 'react-icons/fa'
-import { clearAllTokenatorMessages, tokenator } from "../../utils/tokenatorUtils"
+import useChallenges from '../../utils/useChallenges'
 
 export const Challenge = () => {
   const navigate = useNavigate()
+
+  const { tokenator, challenges } = useChallenges()
 
   // State ============================================================
 
@@ -31,12 +33,11 @@ export const Challenge = () => {
     state.setChallengeValues
   ])
 
-  const [isChallenging, setIsChallenging] = useState(false)
+  useEffect(() => {
+    console.log(challengeValues)
+  }, [challengeValues])
 
-  const [challenges, setChallenges] = useChallengeStore((state: any) => [
-    state.challenges,
-    state.setChallenges
-  ])
+  const [isChallenging, setIsChallenging] = useState(false)
 
   // Handlers =========================================================
 
@@ -49,10 +50,10 @@ export const Challenge = () => {
         messageBox: 'coinflip_inbox',
         body: {
           message: `You have a new coinflip challenge from ${challengeValues.identity.name}`,
-          headsOrTails: challengeValues.headsOrTails,
+          senderCoinChoice: challengeValues.senderCoinChoice,
           amount: challengeValues.amount,
           identityKey: challengeValues.identity.identityKey,
-          sender: challengeValues.identity.name,
+          sender: challengeValues.identity.name
         }
       })
       toast.success(`Your challenge has been sent to ${challengeValues.identity.name}`)
@@ -66,8 +67,8 @@ export const Challenge = () => {
 
   const handleHeadsOrTailsSelection = (value: 0 | 1) => {
     // Set equal to null if same selection is clicked again, or switch to other value
-    const isEqualToPrevValue = challengeValues.headsOrTails === value
-    setChallengeValues({ ...challengeValues, headsOrTails: isEqualToPrevValue ? null : value })
+    const isEqualToPrevValue = challengeValues.senderCoinChoice === value
+    setChallengeValues({ ...challengeValues, senderCoinChoice: isEqualToPrevValue ? null : value })
   }
 
   return (
@@ -78,7 +79,7 @@ export const Challenge = () => {
             variant="outlined"
             id="myChallengesButton"
             onClick={() => {
-              navigate('/my_challenges')
+              navigate('/myChallenges')
             }}
           >
             <FaBell style={{ marginRight: '.5rem' }} />
@@ -96,7 +97,7 @@ export const Challenge = () => {
         <p>Enter a user to challenge:</p>
         <IdentitySearchField
           onIdentitySelected={identity => {
-            setChallengeValues({ ...challengeValues, identity: identity })
+            setChallengeValues({ ...challengeValues, identity: identity, sender: identity.name })
             console.log(identity)
           }}
           theme={theme}
@@ -122,7 +123,7 @@ export const Challenge = () => {
         <div className="flex" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
             className="headsOrTailsButton"
-            variant={challengeValues.headsOrTails === 0 ? 'contained' : 'outlined'}
+            variant={challengeValues.senderCoinChoice === 0 ? 'contained' : 'outlined'}
             onClick={() => handleHeadsOrTailsSelection(0)}
             disableRipple
           >
@@ -130,7 +131,7 @@ export const Challenge = () => {
           </Button>
           <Button
             className="headsOrTailsButton"
-            variant={challengeValues.headsOrTails === 1 ? 'contained' : 'outlined'}
+            variant={challengeValues.senderCoinChoice === 1 ? 'contained' : 'outlined'}
             onClick={() => handleHeadsOrTailsSelection(1)}
             disableRipple
           >

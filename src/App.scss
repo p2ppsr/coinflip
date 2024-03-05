@@ -17,7 +17,7 @@ h1 {
 }
 
 h2 {
-  color:rgb(237, 220, 86);
+  color: rgb(237, 220, 86);
   font-style: italic;
 }
 
@@ -42,7 +42,7 @@ p {
 .actionButton {
   width: 300px;
   height: 4rem;
-  margin-top:1.5rem !important;
+  margin-top: 1.5rem !important;
 }
 
 .container {
@@ -50,13 +50,13 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding:1rem;
+  padding: 1rem;
 }
 
 #myChallengesButton {
-  position:absolute;
-  top:1rem;
-  left:1rem;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
   border: 1px solid goldenrod;
-  color:gold
+  color: gold;
 }

@@ -1,6 +1,6 @@
 import { Button } from '@mui/material'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { sleep } from '../../utils/utils'
 
 import Lottie from 'react-lottie'
@@ -13,11 +13,11 @@ import tailsImage from '../../assets/tails.png'
 // Styles
 import './Coinflip.scss'
 import { useChallengeStore } from '../../stores/stores'
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 
 const Coinflip = () => {
   const navigate = useNavigate()
-  const coinFlipDelay = 4000
+  const coinFlipDelay = 3000
 
   // State =========================================================================
 
@@ -54,6 +54,10 @@ const Coinflip = () => {
     }
   }
 
+  useEffect(() => {
+    flipCoin()
+  }, [])
+
   // Render ======================================================================
 
   return (
@@ -61,34 +65,36 @@ const Coinflip = () => {
       <div className="coinflipContainer">
         {coinIsFlipping ? (
           <>
-            <Lottie options={coinFlipAnimationOptions} />
+            <Lottie options={coinFlipAnimationOptions} width={400} />
           </>
         ) : (
           <>
             {flipResult !== null && (
               <>
                 <div>
-                  <img src={flipResult === 0 ? headsImage : tailsImage} id="coinflipResultImage"/>
+                  <img src={flipResult === 0 ? headsImage : tailsImage} id="coinflipResultImage" />
                   <h1 id="resultText">
-                    {flipResult === challengeValues.headsOrTails
+                    {flipResult !== challengeValues.senderCoinChoice
                       ? `You win! You have been awarded ${challengeValues.amount * 2} Satoshis.`
                       : `You lose! ${
-                          challengeValues.identity.name
+                          challengeValues.sender
                         } has been awarded ${challengeValues.amount * 2} Satoshis.`}
                   </h1>
-                  <Button variant="contained" className="actionButton" onClick={()=>{navigate('/')}}>Challenge again</Button>
+                  <Button
+                    variant="contained"
+                    className="actionButton"
+                    onClick={() => {
+                      navigate('/')
+                    }}
+                  >
+                    Home
+                  </Button>
                 </div>
               </>
             )}
           </>
         )}
       </div>
-
-      {!coinIsFlipping && flipResult === null && (
-        <Button variant="contained" onClick={flipCoin} className="actionButton">
-          Flip Coin
-        </Button>
-      )}
     </>
   )
 }

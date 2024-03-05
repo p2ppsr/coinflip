@@ -10,31 +10,17 @@ import './App.scss'
 
 // Assets
 import { Bounce, ToastContainer } from 'react-toastify'
+import useAsyncEffect from 'use-async-effect'
 import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
-import useAsyncEffect from 'use-async-effect'
-import { tokenator } from "./utils/tokenatorUtils"
-import { useChallengeStore } from "./stores/stores"
+import useChallenges from './utils/useChallenges'
 
 const App = () => {
-
+  // const navigate = useNavigate()
   // State ============================================================
 
-  const [challenges, setChallenges] = useChallengeStore((state: any) => [
-    state.challenges,
-    state.setChallenges
-  ])
-  
-  // Handlers =========================================================
-
-  const checkChallenges = async () => {
-    const challenges = await tokenator.listMessages({
-      messageBox: 'coinflip_inbox'
-    })
-
-    setChallenges(challenges)
-  }
+  const { checkChallenges } = useChallenges()
 
   // Lifecycle ======================================================
 
@@ -63,7 +49,7 @@ const App = () => {
         position="top-center"
         autoClose={5000}
         hideProgressBar={false}
-        newestOnTop={false}
+        newestOnTop={true}
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
@@ -73,7 +59,7 @@ const App = () => {
         transition={Bounce}
       />
 
-      <div className="container" style={{ marginTop: '6vh' }}>
+      <div className="container" style={{ marginTop: '7vh' }}>
         <img src={babbageLogo} width="150" />
         <img
           src={coinFlipLogo}
@@ -84,7 +70,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Challenge />} />
           <Route path="/coinflip" element={<Coinflip />} />
-          <Route path="/my_challenges" element={<Invitations />} />
+          <Route path="/myChallenges" element={<Invitations />} />
         </Routes>
       </div>
     </BrowserRouter>
