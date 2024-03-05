@@ -13,8 +13,6 @@ import { Button, Stack } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import useChallenges from '../../utils/useChallenges'
 
-// import { clearTokenatorMessage } from "../../utils/tokenatorUtils"
-
 const MyChallenges = () => {
   const navigate = useNavigate()
 
@@ -61,13 +59,14 @@ const MyChallenges = () => {
                     color="success"
                     style={{ marginRight: '.5rem' }}
                     onClick={() => {
-                      // console.log(challenge, parsedChallengeBody)
+                      // Set global values to used in Coinflip.tsx
                       setChallengeValues({
                         sender: sender,
                         amount: amount,
                         senderCoinChoice: senderCoinChoice
                       })
                       navigate('/coinflip')
+                      clearChallenge(challenge.messageId)
                     }}
                   >
                     ✓

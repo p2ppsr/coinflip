@@ -33,10 +33,6 @@ export const Challenge = () => {
     state.setChallengeValues
   ])
 
-  useEffect(() => {
-    console.log(challengeValues)
-  }, [challengeValues])
-
   const [isChallenging, setIsChallenging] = useState(false)
 
   // Handlers =========================================================
@@ -95,13 +91,16 @@ export const Challenge = () => {
 
       <div>
         <p>Enter a user to challenge:</p>
-        <IdentitySearchField
-          onIdentitySelected={identity => {
-            setChallengeValues({ ...challengeValues, identity: identity, sender: identity.name })
-            console.log(identity)
-          }}
-          theme={theme}
-        />
+      
+        <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}> {/* clip child element for border radius */}
+          <IdentitySearchField
+            onIdentitySelected={identity => {
+              setChallengeValues({ ...challengeValues, identity: identity, sender: identity.name })
+              console.log(identity)
+            }}
+            theme={theme}
+          />
+        </div>
       </div>
 
       <div className="fieldContainer">
