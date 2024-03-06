@@ -41,6 +41,7 @@ export const Challenge = () => {
     setIsChallenging(true)
 
     try {
+
       await tokenator.sendMessage({
         recipient: challengeValues.identity.identityKey,
         messageBox: 'coinflip_inbox',
@@ -91,7 +92,7 @@ export const Challenge = () => {
 
       <div>
         <p>Enter a user to challenge:</p>
-      
+
         <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}> {/* clip child element for border radius */}
           <IdentitySearchField
             onIdentitySelected={identity => {

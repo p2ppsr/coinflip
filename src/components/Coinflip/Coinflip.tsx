@@ -14,10 +14,15 @@ import tailsImage from '../../assets/tails.png'
 import './Coinflip.scss'
 import { useChallengeStore } from '../../stores/stores'
 import { useNavigate } from 'react-router-dom'
+import { deployContract, redeemContract } from 'babbage-scrypt-helpers'
+
+// contract
+import CoinflipContract from '../../contracts/CoinflipContract.ts'
+import coinflipContractJson from '../../../artifacts/CoinflipContract.json'
+CoinflipContract.loadArtifact(coinflipContractJson)
 
 const Coinflip = () => {
   const navigate = useNavigate()
-  const coinFlipDelay = 3000
 
   // State =========================================================================
 
@@ -36,9 +41,16 @@ const Coinflip = () => {
   const flipCoin = async () => {
     setCoinIsFlipping(true)
 
-    const flipResultNumber = Math.round(Math.random())
-    await sleep(coinFlipDelay)
-    setFlipResult(flipResultNumber)
+    // construct a new instance of the sCrypt contract, CoinflipContract
+    const contractInstance = new CoinflipContract()
+
+    await deployContract(
+      contractInstance,
+      challengeValues.amount,
+      'Flip a coin'
+    )
+
+    setFlipResult(1)
 
     setCoinIsFlipping(false)
   }
@@ -76,9 +88,8 @@ const Coinflip = () => {
                   <h1 id="resultText">
                     {flipResult !== challengeValues.senderCoinChoice
                       ? `You win! You have been awarded ${challengeValues.amount * 2} Satoshis.`
-                      : `You lose! ${
-                          challengeValues.sender
-                        } has been awarded ${challengeValues.amount * 2} Satoshis.`}
+                      : `You lose! ${challengeValues.sender
+                      } has been awarded ${challengeValues.amount * 2} Satoshis.`}
                   </h1>
                   <Button
                     variant="contained"
