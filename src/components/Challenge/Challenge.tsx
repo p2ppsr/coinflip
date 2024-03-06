@@ -21,6 +21,14 @@ import { useChallengeStore } from '../../stores/stores'
 import { FaBell } from 'react-icons/fa'
 import useChallenges from '../../utils/useChallenges'
 
+// contract
+import { toByteString, int2ByteString, hash256, PubKey, bsv } from 'scrypt-ts'
+import { getPublicKey } from '@babbage/sdk-ts'
+import { deployContract } from 'babbage-scrypt-helpers'
+import CoinflipContract from '../../contracts/CoinflipContract.ts'
+import coinflipContractJson from '../../../artifacts/CoinflipContract.json'
+CoinflipContract.loadArtifact(coinflipContractJson)
+
 export const Challenge = () => {
   const navigate = useNavigate()
 
@@ -41,6 +49,36 @@ export const Challenge = () => {
     setIsChallenging(true)
 
     try {
+      const aliceNonce = toByteString(
+        Array.from(window.crypto.getRandomValues(
+          new Uint8Array(32)
+        )).map(i => ('0' + i.toString(16)).slice(-2)).join(''),
+        false
+      )
+      const aliceChoice = int2ByteString(challengeValues.senderCoinChoice, 1n)
+      const aliceHash = hash256(aliceNonce + aliceChoice)
+      const aliceHex = await getPublicKey({
+        protocolID: [0, 'coinflip'],
+        keyID: '1',
+        counterparty: challengeValues.identity.identityKey,
+        forSelf: true
+      })
+      const bobHex = await getPublicKey({
+        protocolID: [0, 'coinflip'],
+        keyID: '1',
+        counterparty: challengeValues.identity.identityKey
+      })
+      const alice = PubKey(bsv.PublicKey.fromString(aliceHex).toByteString())
+      const bob = PubKey(bsv.PublicKey.fromString(bobHex).toByteString())
+      const timeout = BigInt(Math.round(Date.now() / 1000) + 60) // 1-minute timeout
+      const coinflipInstance = new CoinflipContract(alice, bob, aliceHash, timeout)
+
+      const offerTX = await deployContract(
+        coinflipInstance,
+        challengeValues.amount,
+        'Offer to flip a coin',
+        'coinflip'
+      )
 
       await tokenator.sendMessage({
         recipient: challengeValues.identity.identityKey,
@@ -50,10 +88,18 @@ export const Challenge = () => {
           senderCoinChoice: challengeValues.senderCoinChoice,
           amount: challengeValues.amount,
           identityKey: challengeValues.identity.identityKey,
-          sender: challengeValues.identity.name
+          sender: challengeValues.identity.name,
+          offerTX
         }
       })
       toast.success(`Your challenge has been sent to ${challengeValues.identity.name}`)
+
+      // Wait for Bob to accept
+
+      // If Bob accepts reveal the number
+
+      // If Bob does not accept after 50 seconds cancel the offer
+
     } catch (e) {
       console.log(e)
       toast.error(`There was an error submitting your challenge: ${e}`)

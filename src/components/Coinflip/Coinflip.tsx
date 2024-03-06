@@ -41,14 +41,12 @@ const Coinflip = () => {
   const flipCoin = async () => {
     setCoinIsFlipping(true)
 
-    // construct a new instance of the sCrypt contract, CoinflipContract
-    const contractInstance = new CoinflipContract()
+    // Accept the offer
+    // const instance = CoinflipContract.fromLockingScript(challengeValues.challengeTX)
 
-    await deployContract(
-      contractInstance,
-      challengeValues.amount,
-      'Flip a coin'
-    )
+    // Wait for Alice to reveal
+
+    // IF she does not reveal claim funds after 65 seconds and declare we won
 
     setFlipResult(1)
 
