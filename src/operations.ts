@@ -79,12 +79,93 @@ export const createChallenge = async (bob: string, amount: number, choice: 'head
         })
         const bobsMessages = messages.filter(x => x.sender === bob)
         if (bobsMessages.length < 1) continue
+        // Assuming the first message
         const bobResponse = JSON.parse(bobsMessages[0].body)
         // If Bob accepts reveal the number else fall through to rejection
         if (bobResponse.action === 'accept') {
             console.log('Alice got acceptance back!', bobResponse)
+            const acceptTX: CreateActionResult = bobResponse.acceptTX
+            const parsedAcceptTX = new bsv.Transaction(acceptTX.rawTx)
+            const acceptScript = parsedAcceptTX.outputs[0].script
+            // Assuming the acceptance is in the first output
+            const revelationInstance: CoinflipContract = CoinflipContract.fromLockingScript(acceptScript.toHex()) as CoinflipContract
+            let outcome: 'you-win' | 'they-win'
+            if (revelationInstance.bobNumber === aliceRandomValueZeroOrOne) {
+                outcome = 'you-win'
+                // Alice wins, takes the coins
+                const winScript = await revelationInstance.getUnlockingScript(async (self: CoinflipContract) => {
+                    const bsvtx = new bsv.Transaction()
+                    bsvtx.from({
+                        txId: acceptTX.txid,
+                        outputIndex: 0,
+                        script: acceptScript.toHex(),
+                        satoshis: amount * 2
+                    })
+                    const hashType =
+                        bsv.crypto.Signature.SIGHASH_NONE |
+                        bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+                        bsv.crypto.Signature.SIGHASH_FORKID
+                    const hashbuf = bsv.crypto.Hash.sha256(
+                        bsv.Transaction.Sighash.sighashPreimage(
+                            bsvtx,
+                            hashType,
+                            0,
+                            bsv.Script.fromBuffer(Buffer.from(acceptScript.toHex(), 'hex')),
+                            new bsv.crypto.BN(amount * 2)
+                        )
+                    )
+                    const SDKSignature = await createSignature({
+                        protocolID: [0, 'coinflip'],
+                        keyID: '1',
+                        counterparty: bob,
+                        data: hashbuf
+                    })
+                    const signature = bsv.crypto.Signature.fromString(
+                        Buffer.from(SDKSignature).toString('hex')
+                    )
+                    signature.nhashtype = hashType
+
+                    self.to = { tx: bsvtx, inputIndex: 0 }
+                    self.aliceRevealsWinner(
+                        Sig(toByteString(signature.toTxFormat().toString('hex'))),
+                        aliceNonce,
+                        aliceRandomValueZeroOrOne
+                    )
+                })
+                await createAction({
+                    inputs: {
+                        [acceptTX.txid]: {
+                            ...verifyTruthy(acceptTX),
+                            outputsToRedeem: [{
+                                index: 0,
+                                unlockingScript: winScript.toHex()
+                            }]
+                        }
+                    },
+                    description: `You win a coin flip`,
+                    acceptDelayedBroadcast: false
+                })
+            } else {
+                outcome = 'they-win'
+            }
+            // Alice sends message to Bob
+            await tokenator.sendMessage({
+                recipient: bob,
+                messageBox: 'coinflip_winnings',
+                body: {
+                    nonce: aliceNonce,
+                    number: aliceRandomValueZeroOrOne
+                }
+            })
+            console.log('Alice sent revelation back to Bob')
+            return outcome
         } else {
             rejectionReason = 'rejected'
+        }
+        await tokenator.acknowledgeMessage({
+            messageIds: [bobsMessages[0].messageId]
+        })
+        if (rejectionReason === 'rejected') {
             break
         }
     }
@@ -182,17 +263,11 @@ window.l = checkForChallenges
 export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'you-win' | 'they-win'> => {
     const parsedOfferTX = new bsv.Transaction(challenge.tx.rawTx)
     const offerScript = parsedOfferTX.outputs[0].script
-    const coinflipInstance: CoinflipContract = CoinflipContract.fromLockingScript(
-        parsedOfferTX.outputs[0].script.toHex()
-    )
-    const coinflipMockInstance: CoinflipContract = CoinflipContract.fromLockingScript(
-        parsedOfferTX.outputs[0].script.toHex()
-    )
+    const coinflipInstance: CoinflipContract = CoinflipContract.fromLockingScript(offerScript.toHex()) as CoinflipContract
+    const coinflipMockInstance: CoinflipContract = CoinflipContract.fromLockingScript(offerScript.toHex()) as CoinflipContract
     const bobRandomOneOrZero = BigInt(Math.round(Math.random()))
-    const prevOS = coinflipInstance.lockingScript
     coinflipMockInstance.transitionState(bobRandomOneOrZero)
-    const outputScript = coinflipMockInstance.lockingScript
-    console.log(`${prevOS.toHex()} === ${outputScript.toHex()} is ${prevOS.toHex() === outputScript.toHex()}`)
+    const nextOutputScript = coinflipMockInstance.lockingScript
     const unlockingScript = await coinflipInstance.getUnlockingScript(async (self: CoinflipContract) => {
         const bsvtx = new bsv.Transaction()
         bsvtx.from({
@@ -202,7 +277,7 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
             satoshis: challenge.amount
         })
         bsvtx.addOutput(new bsv.Transaction.Output({
-            script: outputScript,
+            script: nextOutputScript,
             satoshis: challenge.amount * 2
         }))
         const hashType =
@@ -215,7 +290,7 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
                 hashType,
                 0,
                 bsv.Script.fromBuffer(Buffer.from(offerScript.toHex(), 'hex')),
-                new bsv.crypto.BN(parseInt(String(challenge.amount)))
+                new bsv.crypto.BN(challenge.amount)
             )
         )
         const SDKSignature = await createSignature({
@@ -230,11 +305,14 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
         signature.nhashtype = hashType
         self.to = { tx: bsvtx, inputIndex: 0 }
         self.from = { tx: parsedOfferTX, outputIndex: 0 }
+        console.log('before accept')
         self.acceptOffer(
             Sig(toByteString(signature.toTxFormat().toString('hex'))),
             bobRandomOneOrZero
         )
+        console.log('after accept')
     })
+    console.log('unlocking script', unlockingScript)
     // Create the action
     const acceptTX = await createAction({
         inputs: {
@@ -247,7 +325,7 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
             }
         },
         outputs: [{
-            script: outputScript.toHex(),
+            script: nextOutputScript.toHex(),
             satoshis: challenge.amount * 2,
             basket: 'coinflip'
         }],
@@ -280,21 +358,90 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
         })
         const aliceMessages = messages.filter(x => x.sender === challenge.from)
         if (aliceMessages.length < 1) continue
+        await tokenator.acknowledgeMessage({
+            messageIds: [aliceMessages[0].messageId]
+        })
         const aliceMessage = JSON.parse(aliceMessages[0].body)
-        console.log('Got back from Alice', aliceMessage)
-        return 'you-win' // todo
+        console.log('Got back from Alice!', aliceMessage)
+        const revelationInstance: CoinflipContract = CoinflipContract.fromLockingScript(nextOutputScript.toHex()) as CoinflipContract
+        const hashForVerification = hash256(toByteString(aliceMessage.nonce) + int2ByteString(aliceMessage.number, 1n))
+        // Alice's number and nonce need to be verified before we know the result is authentic
+        if (hashForVerification !== revelationInstance.aliceHash) {
+            continue
+        }
+        if (bobRandomOneOrZero === aliceMessage.number) {
+            return 'they-win'
+        }
+
+        // Bob can claim his winnings
+        const winScript = await revelationInstance.getUnlockingScript(async (self: CoinflipContract) => {
+            const bsvtx = new bsv.Transaction()
+            bsvtx.from({
+                txId: acceptTX.txid,
+                outputIndex: 0,
+                script: nextOutputScript.toHex(),
+                satoshis: challenge.amount * 2
+            })
+            const hashType =
+                bsv.crypto.Signature.SIGHASH_NONE |
+                bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+                bsv.crypto.Signature.SIGHASH_FORKID
+            const hashbuf = bsv.crypto.Hash.sha256(
+                bsv.Transaction.Sighash.sighashPreimage(
+                    bsvtx,
+                    hashType,
+                    0,
+                    bsv.Script.fromBuffer(Buffer.from(nextOutputScript.toHex(), 'hex')),
+                    new bsv.crypto.BN(challenge.amount * 2)
+                )
+            )
+            const SDKSignature = await createSignature({
+                protocolID: [0, 'coinflip'],
+                keyID: '1',
+                counterparty: challenge.from,
+                data: hashbuf
+            })
+            const signature = bsv.crypto.Signature.fromString(
+                Buffer.from(SDKSignature).toString('hex')
+            )
+            signature.nhashtype = hashType
+
+            self.to = { tx: bsvtx, inputIndex: 0 }
+            self.aliceRevealsWinner(
+                Sig(toByteString(signature.toTxFormat().toString('hex'))),
+                toByteString(aliceMessage.nonce),
+                BigInt(aliceMessage.number)
+            )
+        })
+        await createAction({
+            inputs: {
+                [acceptTX.txid]: {
+                    ...verifyTruthy(acceptTX),
+                    outputsToRedeem: [{
+                        index: 0,
+                        unlockingScript: winScript.toHex()
+                    }]
+                }
+            },
+            description: `You win a coin flip`,
+            acceptDelayedBroadcast: false
+        })
+        return 'you-win'
     }
 
     // If there is no response, claim the winnings
     console.log('Alice did not respond, Bob is claiming the winnings.')
-    const reclaimScript = await coinflipInstance.getUnlockingScript(async (self: CoinflipContract) => {
+    const reclaimInstance: CoinflipContract = CoinflipContract.fromLockingScript(nextOutputScript.toHex()) as CoinflipContract
+    const reclaimScript = await reclaimInstance.getUnlockingScript(async (self: CoinflipContract) => {
         const bsvtx = new bsv.Transaction()
         bsvtx.from({
             txId: acceptTX.txid,
             outputIndex: 0,
-            script: outputScript.toHex(),
+            script: nextOutputScript.toHex(),
             satoshis: challenge.amount * 2
         })
+        bsvtx.inputs[0].sequenceNumber = 0xfffffffe
+        bsvtx.nLockTime = challenge.expires + 5
         const hashType =
             bsv.crypto.Signature.SIGHASH_NONE |
             bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
@@ -304,8 +451,8 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
                 bsvtx,
                 hashType,
                 0,
-                bsv.Script.fromBuffer(Buffer.from(outputScript.toHex(), 'hex')),
-                new bsv.crypto.BN(parseInt(String(challenge.amount * 2)))
+                bsv.Script.fromBuffer(Buffer.from(nextOutputScript.toHex(), 'hex')),
+                new bsv.crypto.BN(challenge.amount * 2)
             )
         )
         const SDKSignature = await createSignature({
@@ -330,10 +477,12 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
                 ...verifyTruthy(acceptTX),
                 outputsToRedeem: [{
                     index: 0,
-                    unlockingScript: reclaimScript.toHex()
+                    unlockingScript: reclaimScript.toHex(),
+                    sequenceNumber: 0xfffffffe
                 }]
             }
         },
+        lockTime: challenge.expires + 5,
         description: `You win a coin flip`,
         acceptDelayedBroadcast: false
     })
@@ -366,5 +515,5 @@ window.rlm = async () => {
 
 window.alm = async () => {
     const li = await checkForChallenges()
-    await acceptChallenge(li[li.length - 1])
+    return await acceptChallenge(li[li.length - 1])
 }

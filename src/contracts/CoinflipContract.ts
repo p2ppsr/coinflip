@@ -7,8 +7,6 @@ import {
     PubKey,
     Sig,
     SigHash,
-    Utils,
-    hash160,
     hash256,
     Sha256,
     int2ByteString,
@@ -66,14 +64,14 @@ export default class CoinflipContract extends SmartContract {
     @method(SigHash.ANYONECANPAY_SINGLE)
     public acceptOffer(sig: Sig, bobNumber: bigint) {
         assert(this.contractState === 0n, 'Contract not in offer state')
+        assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
 
         // Bob's number must be zero or one
         assert(bobNumber === 0n || bobNumber === 1n, 'Bob must pick zero or one')
 
         // Increment the state to 1 and save Bob's number
-        this.transitionState(bobNumber)
-
-        assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
+        this.bobNumber = bobNumber
+        this.contractState = 1n
 
         const output = this.buildStateOutput(this.ctx.utxo.value * 2n)
         const hashOutputs = hash256(output)
@@ -81,10 +79,9 @@ export default class CoinflipContract extends SmartContract {
     }
 
     // Alice reveals her number and the winner gets the money
-    @method(SigHash.ANYONECANPAY_SINGLE)
+    @method(SigHash.ANYONECANPAY_NONE)
     public aliceRevealsWinner(sig: Sig, aliceNonce: ByteString, aliceNumber: bigint) {
         assert(this.contractState == 1n, 'Bob must have accepted the offer')
-        assert(this.checkSig(sig, this.alice), 'Alice signature invalid')
         assert(len(aliceNonce) === 32n, 'Alice nonce must be 32 bytes')
 
         // Verify Alice's nonce and number against her original commitment
@@ -95,13 +92,9 @@ export default class CoinflipContract extends SmartContract {
         // Now we know this is the number Alice originally picked.
         // If they are the same, Alice wins.
         if (this.bobNumber === aliceNumber) {
-            const outputs = Utils.buildPublicKeyHashOutput(hash160(this.alice), this.ctx.utxo.value)
-            const outputsHash = hash256(outputs)
-            assert(this.ctx.hashOutputs == outputsHash, 'Contract must pay full amount to the Alice')
+            assert(this.checkSig(sig, this.alice), 'Alice signature invalid')
         } else {
-            const outputs = Utils.buildPublicKeyHashOutput(hash160(this.bob), this.ctx.utxo.value)
-            const outputsHash = hash256(outputs)
-            assert(this.ctx.hashOutputs == outputsHash, 'Contract must pay full amount to the Bob')
+            assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
         }
     }
 
