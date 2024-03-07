@@ -56,20 +56,10 @@ export default class CoinflipContract extends SmartContract {
     }
 
     // Alice can cancel the offer and get her money back
-    @method()
+    @method(SigHash.ANYONECANPAY_NONE)
     public cancelOffer(sig: Sig) {
         assert(this.contractState === 0n, 'Contract not in offer state')
         assert(this.checkSig(sig, this.alice), 'Alice signature invalid')
-    }
-
-    // Bob can reject Alice's offer if he refunds Alice her money
-    @method(SigHash.ANYONECANPAY_SINGLE)
-    public rejectOffer(sig: Sig) {
-        assert(this.contractState === 0n, 'Contract not in offer state')
-        assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
-        const outputs = Utils.buildPublicKeyHashOutput(hash160(this.alice), this.ctx.utxo.value)
-        const outputsHash = hash256(outputs)
-        assert(this.ctx.hashOutputs == outputsHash, 'Contract must refund full amount to Alice')
     }
 
     // Bob can accept the offer by doubling the money in the contract and adding his number

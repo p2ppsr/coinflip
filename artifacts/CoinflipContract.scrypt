@@ -17,18 +17,9 @@ contract CoinflipContract {
     this.timeout = timeout;
   }
   public function cancelOffer(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
-    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'41')));
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
     require(this.contractState == 0);
     require(checkSig(sig, this.alice));
-  }
-  public function rejectOffer(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
-    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
-    this.ctx = CoinflipContract.createCtx(__scrypt_ts_txPreimage);
-    require(this.contractState == 0);
-    require(checkSig(sig, this.bob));
-    bytes outputs = Utils.buildOutput(Utils.buildPublicKeyHashScript(hash160(this.alice)), this.ctx.utxo.value);
-    Sha256 outputsHash = hash256(outputs);
-    require(this.ctx.hashOutputs == outputsHash);
   }
   public function acceptOffer(Sig sig, int bobNumber, SigHashPreimage __scrypt_ts_txPreimage) {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
@@ -63,7 +54,7 @@ contract CoinflipContract {
     require(true);
   }
   public function bobWinsAutomaticallyAfterDelay(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
-    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
     this.ctx = CoinflipContract.createCtx(__scrypt_ts_txPreimage);
     require(this.contractState == 1);
     require(checkSig(sig, this.bob));

@@ -4,7 +4,6 @@
   "scryptfile": "CoinflipContract.scrypt",
   "sourceMapFile": "CoinflipContract.scrypt.map",
   "ctxMethods": [
-    "rejectOffer",
     "acceptOffer",
     "aliceRevealsWinner",
     "bobWinsAutomaticallyAfterDelay"
