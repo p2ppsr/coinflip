@@ -45,11 +45,11 @@ export default class CoinflipContract extends SmartContract {
     // state 1 = accepted
 
     // Alice can make an offer by committing some money to a hash
-    constructor(alice: PubKey, bob: PubKey, aliceHash: Sha256, timeout: bigint) {
+    constructor(alice: PubKey, bob: PubKey, aliceHash: Sha256, timeout: bigint, contractState: bigint = 0n, bobNumber: bigint = -1n) {
         super(...arguments)
         this.aliceHash = aliceHash
-        this.contractState = 0n
-        this.bobNumber = -1n
+        this.contractState = contractState
+        this.bobNumber = bobNumber
         this.alice = alice
         this.bob = bob
         this.timeout = timeout
@@ -66,14 +66,14 @@ export default class CoinflipContract extends SmartContract {
     @method(SigHash.ANYONECANPAY_SINGLE)
     public acceptOffer(sig: Sig, bobNumber: bigint) {
         assert(this.contractState === 0n, 'Contract not in offer state')
-        assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
 
         // Bob's number must be zero or one
         assert(bobNumber === 0n || bobNumber === 1n, 'Bob must pick zero or one')
 
         // Increment the state to 1 and save Bob's number
-        this.contractState = 1n
-        this.bobNumber = bobNumber
+        this.transitionState(bobNumber)
+
+        assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
 
         const output = this.buildStateOutput(this.ctx.utxo.value * 2n)
         const hashOutputs = hash256(output)
@@ -111,5 +111,11 @@ export default class CoinflipContract extends SmartContract {
         assert(this.contractState == 1n, 'Bob must have accepted the offer')
         assert(this.checkSig(sig, this.bob), 'Bob signature invalid')
         assert(this.timeLock(this.timeout), 'Contract has not yet expired')
+    }
+
+    @method()
+    transitionState(bobNumber: bigint): void {
+        this.contractState = 1n
+        this.bobNumber = bobNumber
     }
 }

@@ -8,10 +8,10 @@ contract CoinflipContract {
   @state int bobNumber;
   @state int contractState;
   __scrypt_ts_ScriptContext ctx;
-  constructor(PubKey alice, PubKey bob, Sha256 aliceHash, int timeout) {
+  constructor(PubKey alice, PubKey bob, Sha256 aliceHash, int timeout, int contractState, int bobNumber) {
     this.aliceHash = aliceHash;
-    this.contractState = 0;
-    this.bobNumber = -1;
+    this.contractState = contractState;
+    this.bobNumber = bobNumber;
     this.alice = alice;
     this.bob = bob;
     this.timeout = timeout;
@@ -25,10 +25,9 @@ contract CoinflipContract {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
     this.ctx = CoinflipContract.createCtx(__scrypt_ts_txPreimage);
     require(this.contractState == 0);
-    require(checkSig(sig, this.bob));
     require(bobNumber == 0 || bobNumber == 1);
-    this.contractState = 1;
-    this.bobNumber = bobNumber;
+    this.transitionState(bobNumber);
+    require(checkSig(sig, this.bob));
     bytes output = this.buildStateOutput(this.ctx.utxo.value * 2);
     Sha256 hashOutputs = hash256(output);
     require(this.ctx.hashOutputs == hashOutputs);
@@ -59,6 +58,11 @@ contract CoinflipContract {
     require(this.contractState == 1);
     require(checkSig(sig, this.bob));
     require(this.timeLock(this.timeout));
+  }
+  function transitionState(int bobNumber) : bool {
+    this.contractState = 1;
+    this.bobNumber = bobNumber;
+    return true;
   }
   static function createCtx(SigHashPreimage txPreimage) : __scrypt_ts_ScriptContext {  bytes version = SigHash.nVersion(txPreimage);  bytes hashPrevouts = SigHash.hashPrevouts(txPreimage);  bytes hashSequence = SigHash.hashSequence(txPreimage);  bytes hashOutputs = SigHash.hashOutputs(txPreimage);  int locktime = SigHash.nLocktime(txPreimage);  int sequence = SigHash.nSequence(txPreimage);  SigHashType sigHashType = SigHash.sigHashType(txPreimage);  bytes txid = SigHash.outpoint(txPreimage)[0 : 32];  int outputIndex = unpack(SigHash.outpoint(txPreimage)[32 :]);  __scrypt_ts_Outpoint outpoint = { txid, outputIndex };  bytes scriptCode = SigHash.scriptCode(txPreimage);  int value = SigHash.value(txPreimage);  __scrypt_ts_UTXO utxo = { outpoint, scriptCode, value };  return { version, hashPrevouts, hashSequence, hashOutputs, locktime, sequence, sigHashType, utxo, txPreimage };}
   function timeLock(int locktime): bool {  bool res = true;  res = this.ctx.sequence < 0xffffffff;  if (    locktime < 500000000  ) {    res = res && this.ctx.locktime < 500000000;  }  return res && this.ctx.locktime >= locktime;}

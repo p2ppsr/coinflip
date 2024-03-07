@@ -48,7 +48,7 @@ export const createChallenge = async (bob: string, amount: number, choice: 'head
     const alice = PubKey(bsv.PublicKey.fromString(aliceHex).toByteString())
     const bobPK = PubKey(bsv.PublicKey.fromString(bobHex).toByteString())
     const timeout = BigInt(Math.round(Date.now() / 1000) + 60) // 1-minute timeout
-    const coinflipInstance = new CoinflipContract(alice, bobPK, aliceHash, timeout)
+    const coinflipInstance = new CoinflipContract(alice, bobPK, aliceHash, timeout, 0n, -1n)
     const offerScript = coinflipInstance.lockingScript.toHex()
 
     const offerTX = await createAction({
@@ -182,21 +182,17 @@ window.l = checkForChallenges
 export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'you-win' | 'they-win'> => {
     const parsedOfferTX = new bsv.Transaction(challenge.tx.rawTx)
     const offerScript = parsedOfferTX.outputs[0].script
-    const coinflipInstance = CoinflipContract.fromLockingScript(
+    const coinflipInstance: CoinflipContract = CoinflipContract.fromLockingScript(
+        parsedOfferTX.outputs[0].script.toHex()
+    )
+    const coinflipMockInstance: CoinflipContract = CoinflipContract.fromLockingScript(
         parsedOfferTX.outputs[0].script.toHex()
     )
     const bobRandomOneOrZero = BigInt(Math.round(Math.random()))
-    // Create an unlocking script
-    const mockInstance: CoinflipContract = CoinflipContract.fromLockingScript(
-        parsedOfferTX.outputs[0].script.toHex()
-    )
-    mockInstance.contractState = 1n
-    mockInstance.bobNumber = bobRandomOneOrZero
-    const stateOutput = mockInstance.buildStateOutput(BigInt(challenge.amount * 2))
-    console.log(stateOutput)
-    console.log(stateOutput.slice(8))
-    const outputScript = bsv.Script.fromString(stateOutput.slice(8))
-    console.log(outputScript)
+    const prevOS = coinflipInstance.lockingScript
+    coinflipMockInstance.transitionState(bobRandomOneOrZero)
+    const outputScript = coinflipMockInstance.lockingScript
+    console.log(`${prevOS.toHex()} === ${outputScript.toHex()} is ${prevOS.toHex() === outputScript.toHex()}`)
     const unlockingScript = await coinflipInstance.getUnlockingScript(async (self: CoinflipContract) => {
         const bsvtx = new bsv.Transaction()
         bsvtx.from({
@@ -233,6 +229,7 @@ export const acceptChallenge = async (challenge: IncomingChallenge): Promise<'yo
         )
         signature.nhashtype = hashType
         self.to = { tx: bsvtx, inputIndex: 0 }
+        self.from = { tx: parsedOfferTX, outputIndex: 0 }
         self.acceptOffer(
             Sig(toByteString(signature.toTxFormat().toString('hex'))),
             bobRandomOneOrZero
