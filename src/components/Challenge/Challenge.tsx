@@ -1,10 +1,8 @@
 // Dependencies
-import Tokenator from '@babbage/tokenator'
 import { Button, CircularProgress } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import useAsyncEffect from 'use-async-effect'
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
@@ -19,44 +17,48 @@ import { useChallengeStore } from '../../stores/stores'
 
 // Assets
 import { FaBell } from 'react-icons/fa'
-import useChallenges from '../../utils/useChallenges'
 
 import { createChallenge } from '../../operations'
 
 export const Challenge = () => {
   const navigate = useNavigate()
 
-  const { tokenator, challenges } = useChallenges()
-
+  
   // State ============================================================
 
+  // Global challenge values
+  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+    state.challenges,
+    state.setChallenges
+  ])
+
+  // Form values
   const [challengeValues, setChallengeValues] = useChallengeStore((state: any) => [
     state.challengeValues,
     state.setChallengeValues
   ])
 
+  // Local UI loading state
   const [isChallenging, setIsChallenging] = useState(false)
 
   // Handlers =========================================================
 
   const handleChallenge = async () => {
-    setIsChallenging(true)
+    // setIsChallenging(true)
 
     try {
-
       const result = await createChallenge(
         challengeValues.identity.identityKey,
         challengeValues.amount,
         challengeValues.senderCoinChoice === 0 ? 'heads' : 'tails'
       )
-      window.alert(result)
+      toast.success(result)
       // toast.success(`Your challenge has been sent to ${challengeValues.identity.name}`)
-
     } catch (e) {
       console.log(e)
       toast.error(`There was an error submitting your challenge: ${e}`)
     } finally {
-      setIsChallenging(false)
+      // setIsChallenging(false)
     }
   }
 
@@ -91,7 +93,9 @@ export const Challenge = () => {
       <div>
         <p>Enter a user to challenge:</p>
 
-        <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}> {/* clip child element for border radius */}
+        <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}>
+          {' '}
+          {/* clip child element for border radius */}
           <IdentitySearchField
             onIdentitySelected={identity => {
               setChallengeValues({ ...challengeValues, identity: identity, sender: identity.name })
