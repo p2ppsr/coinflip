@@ -7,3 +7,8 @@ declare module '@babbage/tokenator' {
   const tokenator: any
   export default tokenator
 }
+
+declare module 'metanet-identity-react' {
+  const IdentityCard: any
+  export { IdentityCard }
+}
