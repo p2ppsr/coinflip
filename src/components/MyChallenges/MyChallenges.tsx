@@ -17,6 +17,7 @@ import { discoverByIdentityKey } from '@babbage/sdk-ts'
 import { Button, Stack } from '@mui/material'
 import { toast } from 'react-toastify'
 import { IdentityCard } from 'metanet-identity-react'
+import React from "react"
 
 const MyChallenges = () => {
   const navigate = useNavigate()

@@ -19,6 +19,7 @@ import { deployContract, redeemContract } from 'babbage-scrypt-helpers'
 // contract
 import CoinflipContract from '../../contracts/CoinflipContract.ts'
 import coinflipContractJson from '../../../artifacts/CoinflipContract.json'
+import React from "react"
 CoinflipContract.loadArtifact(coinflipContractJson)
 
 const Coinflip = () => {
