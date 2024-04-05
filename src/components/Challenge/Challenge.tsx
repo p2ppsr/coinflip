@@ -1,16 +1,17 @@
 // Dependencies
-import Tokenator from '@babbage/tokenator'
-import { Button, CircularProgress } from '@mui/material'
+import React from "react"
+import { Button } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import useAsyncEffect from 'use-async-effect'
+import { createChallenge } from '../../operations'
+import Lottie from "react-lottie"
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
 
 // Styles
-import { theme } from '../../main'
+import { theme } from '../../index'
 import './Challenge.scss'
 
 // Stores
@@ -19,22 +20,27 @@ import { useChallengeStore } from '../../stores/stores'
 
 // Assets
 import { FaBell } from 'react-icons/fa'
-import useChallenges from '../../utils/useChallenges'
+import coinflipAnimaion from '../../assets/coinflipAnimation.json'
 
-import { createChallenge } from '../../operations'
 
 export const Challenge = () => {
   const navigate = useNavigate()
 
-  const { tokenator, challenges } = useChallenges()
-
   // State ============================================================
 
+  // Global challenge values
+  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+    state.challenges,
+    state.setChallenges
+  ])
+
+  // Form values
   const [challengeValues, setChallengeValues] = useChallengeStore((state: any) => [
     state.challengeValues,
     state.setChallengeValues
   ])
 
+  // Local UI loading state
   const [isChallenging, setIsChallenging] = useState(false)
 
   // Handlers =========================================================
@@ -43,15 +49,13 @@ export const Challenge = () => {
     setIsChallenging(true)
 
     try {
-
       const result = await createChallenge(
         challengeValues.identity.identityKey,
         challengeValues.amount,
         challengeValues.senderCoinChoice === 0 ? 'heads' : 'tails'
       )
-      window.alert(result)
+      toast.success(result)
       // toast.success(`Your challenge has been sent to ${challengeValues.identity.name}`)
-
     } catch (e) {
       console.log(e)
       toast.error(`There was an error submitting your challenge: ${e}`)
@@ -64,6 +68,15 @@ export const Challenge = () => {
     // Set equal to null if same selection is clicked again, or switch to other value
     const isEqualToPrevValue = challengeValues.senderCoinChoice === value
     setChallengeValues({ ...challengeValues, senderCoinChoice: isEqualToPrevValue ? null : value })
+  }
+
+  const coinFlipAnimationOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: coinflipAnimaion,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice'
+    }
   }
 
   return (
@@ -83,69 +96,78 @@ export const Challenge = () => {
         </>
       )}
 
-      {/* TODO: Manually clear tokenator messages; dev purposes only */}
-      {/* <button className="button" onClick={clearAllTokenatorMessages}>
-        Clear Tokenator Messages
-      </button> */}
+      {isChallenging ? (
+        <>
+          <Lottie options={coinFlipAnimationOptions} width={400} />
+        </>
+      ) : (
+        <>
+          <div>
+            <p>Enter a user to challenge:</p>
 
-      <div>
-        <p>Enter a user to challenge:</p>
+            <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}>
+              {' '}
+              {/* clip child element for border radius */}
+              <IdentitySearchField
+                onIdentitySelected={identity => {
+                  setChallengeValues({
+                    ...challengeValues,
+                    identity: identity,
+                    sender: identity.name
+                  })
+                  console.log(identity)
+                }}
+                theme={theme}
+              />
+            </div>
+          </div>
 
-        <div style={{ borderRadius: '.25rem', overflow: 'hidden' }}> {/* clip child element for border radius */}
-          <IdentitySearchField
-            onIdentitySelected={identity => {
-              setChallengeValues({ ...challengeValues, identity: identity, sender: identity.name })
-              console.log(identity)
-            }}
-            theme={theme}
-          />
-        </div>
-      </div>
+          <div className="fieldContainer">
+            <p>Enter an amount to bet:</p>
+            <input
+              className="userInput"
+              type="number"
+              onChange={e => {
+                setChallengeValues({
+                  ...challengeValues,
+                  amount: e.target.value ? parseInt(e.target.value, 10) : null
+                })
+              }}
+            />
+          </div>
 
-      <div className="fieldContainer">
-        <p>Enter an amount to bet:</p>
-        <input
-          className="userInput"
-          type="number"
-          onChange={e => {
-            setChallengeValues({
-              ...challengeValues,
-              amount: e.target.value ? parseInt(e.target.value, 10) : null
-            })
-          }}
-        />
-      </div>
+          <div className="fieldContainer">
+            <p>Heads or tails?</p>
+            <div className="flex" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button
+                className="headsOrTailsButton"
+                variant={challengeValues.senderCoinChoice === 0 ? 'contained' : 'outlined'}
+                onClick={() => handleHeadsOrTailsSelection(0)}
+                disableRipple
+              >
+                Heads
+              </Button>
+              <Button
+                className="headsOrTailsButton"
+                variant={challengeValues.senderCoinChoice === 1 ? 'contained' : 'outlined'}
+                onClick={() => handleHeadsOrTailsSelection(1)}
+                disableRipple
+              >
+                Tails
+              </Button>
+            </div>
+          </div>
 
-      <div className="fieldContainer">
-        <p>Heads or tails?</p>
-        <div className="flex" style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
-            className="headsOrTailsButton"
-            variant={challengeValues.senderCoinChoice === 0 ? 'contained' : 'outlined'}
-            onClick={() => handleHeadsOrTailsSelection(0)}
-            disableRipple
+            variant="contained"
+            className="actionButton"
+            disabled={objectHasEmptyValues(challengeValues)}
+            onClick={handleChallenge}
           >
-            Heads
+            Invite
           </Button>
-          <Button
-            className="headsOrTailsButton"
-            variant={challengeValues.senderCoinChoice === 1 ? 'contained' : 'outlined'}
-            onClick={() => handleHeadsOrTailsSelection(1)}
-            disableRipple
-          >
-            Tails
-          </Button>
-        </div>
-      </div>
-
-      <Button
-        variant="contained"
-        className="actionButton"
-        disabled={objectHasEmptyValues(challengeValues)}
-        onClick={handleChallenge}
-      >
-        {isChallenging ? <CircularProgress className="loadingSpinner" color="info" /> : 'Invite'}
-      </Button>
+        </>
+      )}
     </div>
   )
 }

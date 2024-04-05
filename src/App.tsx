@@ -1,3 +1,4 @@
+import React from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 // Components
@@ -15,24 +16,28 @@ import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
 import useChallenges from './utils/useChallenges'
+import { checkForChallenges } from './operations'
+import { useChallengeStore } from './stores/stores'
 
 const App = () => {
-  // const navigate = useNavigate()
   // State ============================================================
 
-  const { checkChallenges } = useChallenges()
+  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+    state.challenges,
+    state.setChallenges,
+  ])
 
   // Lifecycle ======================================================
 
   const challengePollTime = 4000 // poll challenges every 4s
   useAsyncEffect(async () => {
     // Check challenges on load
-    checkChallenges()
+    setChallenges(await checkForChallenges())
 
     // Poll for new challenges
     const interval = setInterval(async () => {
       try {
-        checkChallenges()
+        setChallenges(await checkForChallenges())
       } catch (e) {
         console.log('no tokenator messages found')
       }
@@ -66,15 +71,21 @@ const App = () => {
           width="200"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.2', paddingBottom: '1rem' }}
         />
-
         <Routes>
           <Route path="/" element={<Challenge />} />
           <Route path="/coinflip" element={<Coinflip />} />
           <Route path="/myChallenges" element={<Invitations />} />
         </Routes>
+        
       </div>
     </BrowserRouter>
   )
 }
 
 export default App
+
+/* 
+
+
+
+*/

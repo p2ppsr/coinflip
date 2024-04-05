@@ -38,20 +38,20 @@ const Coinflip = () => {
 
   // Handlers ====================================================================
 
-  const flipCoin = async () => {
-    setCoinIsFlipping(true)
+  // const flipCoin = async () => {
+  //   setCoinIsFlipping(true)
 
-    // Accept the offer
-    // const instance = CoinflipContract.fromLockingScript(challengeValues.challengeTX)
+  //   // Accept the offer
+  //   // const instance = CoinflipContract.fromLockingScript(challengeValues.challengeTX)
 
-    // Wait for Alice to reveal
+  //   // Wait for Alice to reveal
 
-    // IF she does not reveal claim funds after 65 seconds and declare we won
+  //   // IF she does not reveal claim funds after 65 seconds and declare we won
 
-    setFlipResult(1)
+  //   setFlipResult(1)
 
-    setCoinIsFlipping(false)
-  }
+  //   setCoinIsFlipping(false)
+  // }
 
   // Lottie animation config =======================================================
 
@@ -63,10 +63,6 @@ const Coinflip = () => {
       preserveAspectRatio: 'xMidYMid slice'
     }
   }
-
-  useEffect(() => {
-    flipCoin()
-  }, [])
 
   // Render ======================================================================
 
