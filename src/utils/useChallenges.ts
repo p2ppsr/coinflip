@@ -1,11 +1,12 @@
 import Tokenator from '@babbage/tokenator'
 import { useChallengeStore } from '../stores/stores'
+import constants from './constants'
 
 // Custom hook for accessing tokenator, its methods, global challenges state, and checking challenges
 const useChallenges = () => {
   // Initialize Tokenator with configuration
   const tokenator = new Tokenator({
-    peerServHost: process.env.REACT_APP_PEERSERV_HOST
+    peerServHost: constants.peerservURL
   })
 
   // Use Zustand store for challenges state management

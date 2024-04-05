@@ -10,10 +10,11 @@ import { toByteString, int2ByteString, hash256, PubKey, Sig, bsv } from 'scrypt-
 import { discoverByIdentityKey } from '@babbage/sdk-ts'
 import CoinflipContract from './contracts/CoinflipContract.ts'
 import coinflipContractJson from '../artifacts/CoinflipContract.json'
+import constants from './utils/constants.ts'
 CoinflipContract.loadArtifact(coinflipContractJson)
 
 const tokenator = new Tokenator({
-  peerServHost: process.env.REACT_APP_PEERSERV_HOST
+  peerServHost: constants.peerservURL
 })
 
 /**
@@ -263,7 +264,7 @@ export const checkForChallenges = async (): Promise<IncomingChallenge[]> => {
   return challenges.map(
     (chal): IncomingChallenge => {
       const body = JSON.parse(chal.body)
-    //   console.log(body)
+      //   console.log(body)
       const parsedTX = new bsv.Transaction(body.offerTX.rawTx)
       const instance: CoinflipContract = CoinflipContract.fromLockingScript(
         parsedTX.outputs[0].script.toHex()
