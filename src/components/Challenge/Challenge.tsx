@@ -21,6 +21,7 @@ import { useChallengeStore } from '../../stores/stores'
 // Assets
 import { FaBell } from 'react-icons/fa'
 import coinflipAnimaion from '../../assets/coinflipAnimation.json'
+import constants from "../../utils/constants"
 
 
 export const Challenge = () => {
@@ -109,6 +110,7 @@ export const Challenge = () => {
               {' '}
               {/* clip child element for border radius */}
               <IdentitySearchField
+                confederacyHost={constants.confederacyURL}
                 onIdentitySelected={identity => {
                   setChallengeValues({
                     ...challengeValues,

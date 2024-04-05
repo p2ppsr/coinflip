@@ -1,4 +1,5 @@
 interface Constants {
+  confederacyURL: string
   peerservURL: string
 }
 
@@ -11,11 +12,13 @@ if (
 ) {
   // local
   constants = {
+    confederacyURL: "https://staging-confederacy.babbage.systems",
     peerservURL: 'https://staging-peerserv.babbage.systems'
   }
 } else {
   // production
   constants = {
+    confederacyURL: 'https://confederacy.babbage.systems',
     peerservURL: 'https://peerserv.babbage.systems'
   }
 }
