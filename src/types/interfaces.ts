@@ -5,3 +5,8 @@
 //   sender: string,
 //   updated_at: string,
 // }
+
+interface Identity {
+  identityKey: string;
+  name: string;
+}

@@ -20,7 +20,9 @@ import { deployContract, redeemContract } from 'babbage-scrypt-helpers'
 import CoinflipContract from '../../contracts/CoinflipContract.ts'
 import coinflipContractJson from '../../../artifacts/CoinflipContract.json'
 import React from "react"
+
 CoinflipContract.loadArtifact(coinflipContractJson)
+console.log(CoinflipContract.loadArtifact(coinflipContractJson))
 
 const Coinflip = () => {
   const navigate = useNavigate()
@@ -43,13 +45,13 @@ const Coinflip = () => {
   //   setCoinIsFlipping(true)
 
   //   // Accept the offer
-  //   // const instance = CoinflipContract.fromLockingScript(challengeValues.challengeTX)
+  //   const instance = CoinflipContract.fromLockingScript(challengeValues.challengeTX)
 
   //   // Wait for Alice to reveal
 
   //   // IF she does not reveal claim funds after 65 seconds and declare we won
 
-  //   setFlipResult(1)
+  //   // setFlipResult(1)
 
   //   setCoinIsFlipping(false)
   // }

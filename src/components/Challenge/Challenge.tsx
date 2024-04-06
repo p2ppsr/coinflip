@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createChallenge } from '../../operations'
 import Lottie from "react-lottie"
+import constants from "../../utils/constants"
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
@@ -21,7 +22,6 @@ import { useChallengeStore } from '../../stores/stores'
 // Assets
 import { FaBell } from 'react-icons/fa'
 import coinflipAnimaion from '../../assets/coinflipAnimation.json'
-import constants from "../../utils/constants"
 
 
 export const Challenge = () => {
@@ -111,7 +111,7 @@ export const Challenge = () => {
               {/* clip child element for border radius */}
               <IdentitySearchField
                 confederacyHost={constants.confederacyURL}
-                onIdentitySelected={identity => {
+                onIdentitySelected={(identity: Identity) => {
                   setChallengeValues({
                     ...challengeValues,
                     identity: identity,

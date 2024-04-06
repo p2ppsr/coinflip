@@ -41,10 +41,11 @@ export interface IncomingChallenge {
   expires: number
 }
 
+// Creates a coinflip challenge
 export const createChallenge = async (
-  bob: string,
-  amount: number,
-  choice: 'heads' | 'tails'
+  bob: string, // the recipient of the challenge
+  amount: number, // the amount, in satoshis to be put on the line, equally, by both parties
+  choice: 'heads' | 'tails' // the choices
 ): Promise<'rejected' | 'expired' | 'you-win' | 'they-win'> => {
   const aliceNonce = toByteString(
     Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
@@ -52,7 +53,7 @@ export const createChallenge = async (
       .join(''),
     false
   )
-  const aliceRandomValueZeroOrOne = BigInt(Math.round(Math.random()))
+  const aliceRandomValueZeroOrOne = BigInt(Math.round(Math.random())) // alice generates a 0 or 1
   const aliceChoice = int2ByteString(aliceRandomValueZeroOrOne, 1n)
   const aliceHash = hash256(aliceNonce + aliceChoice)
   const aliceHex = await getPublicKey({
@@ -61,11 +62,13 @@ export const createChallenge = async (
     counterparty: bob,
     forSelf: true
   })
+
   const bobHex = await getPublicKey({
     protocolID: [0, 'coinflip'],
     keyID: '1',
     counterparty: bob
   })
+  
   const alice = PubKey(bsv.PublicKey.fromString(aliceHex).toByteString())
   const bobPK = PubKey(bsv.PublicKey.fromString(bobHex).toByteString())
   const timeout = BigInt(Math.round(Date.now() / 1000) + 60) // 1-minute timeout

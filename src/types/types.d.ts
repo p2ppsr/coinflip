@@ -10,5 +10,6 @@ declare module '@babbage/tokenator' {
 
 declare module 'metanet-identity-react' {
   const IdentityCard: any
-  export { IdentityCard }
+  const IdentitySearchField: any
+  export { IdentityCard, IdentitySearchField }
 }

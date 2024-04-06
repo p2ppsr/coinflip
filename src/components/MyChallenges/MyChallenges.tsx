@@ -1,5 +1,5 @@
 // Dependencies
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { IoIosArrowBack } from 'react-icons/io'
 import { useChallengeStore } from '../../stores/stores'
 
@@ -28,9 +28,9 @@ const MyChallenges = () => {
   ])
 
   // Navigate back to home if there are no challenges
-  // useEffect(() => {
-  //   challenges.length !== 0 || navigate('/')
-  // }, [challenges])
+  useEffect(() => {
+    challenges.length !== 0 || navigate('/')
+  }, [challenges])
 
   return (
     <div className="container myChallengesContainer">
@@ -65,7 +65,7 @@ const MyChallenges = () => {
                       color="success"
                       style={{ marginRight: '.5rem' }}
                       onClick={async () => {
-                        // Set global values to used in Coinflip.tsx
+                        // Set global values to be used in Coinflip.tsx
                         // setChallengeValues({
                         //   from: from,
                         //   amount: amount,
@@ -93,7 +93,11 @@ const MyChallenges = () => {
                                 color="error"
                                 onClick={async () => {
                                   closeToast()
-                                  await rejectChallenge(challenge)
+                                  try {
+                                    await rejectChallenge(challenge)
+                                  } catch (e) {
+                                    toast.error(`There was an error rejecting the challenege: ${e}`)
+                                  }
                                   setChallenges(
                                     challenges.filter((challenge: any) => challenge.id !== id)
                                   )
