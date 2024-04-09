@@ -68,7 +68,7 @@ export const createChallenge = async (
     keyID: '1',
     counterparty: bob
   })
-  
+
   const alice = PubKey(bsv.PublicKey.fromString(aliceHex).toByteString())
   const bobPK = PubKey(bsv.PublicKey.fromString(bobHex).toByteString())
   const timeout = BigInt(Math.round(Date.now() / 1000) + 60) // 1-minute timeout
@@ -101,7 +101,14 @@ export const createChallenge = async (
     const messages = await tokenator.listMessages({
       messageBox: 'coinflip_responses'
     })
-    const bobsMessages = messages.filter(x => x.sender === bob)
+    const bobsMessages = messages.filter(x => {
+      try {
+        const body = JSON.parse(x.body)
+        return x.sender === bob && body.offerTXID === offerTX.txid
+      } catch (e) {
+        return false
+      }
+    })
     if (bobsMessages.length < 1) continue
     // Assuming the first message
     const bobResponse = JSON.parse(bobsMessages[0].body)
@@ -183,6 +190,7 @@ export const createChallenge = async (
         recipient: bob,
         messageBox: 'coinflip_winnings',
         body: {
+          offerTXID: offerTX.txid,
           nonce: aliceNonce,
           number: aliceRandomValueZeroOrOne
         }
@@ -284,8 +292,6 @@ export const checkForChallenges = async (): Promise<IncomingChallenge[]> => {
   )
 }
 
-window.l = checkForChallenges
-
 export const acceptChallenge = async (
   challenge: IncomingChallenge
 ): Promise<'you-win' | 'they-win'> => {
@@ -381,7 +387,8 @@ export const acceptChallenge = async (
     messageBox: 'coinflip_responses',
     body: {
       action: 'accept',
-      acceptTX
+      acceptTX,
+      offerTXID: challenge.tx.txid
     }
   })
 
@@ -394,7 +401,14 @@ export const acceptChallenge = async (
     const messages = await tokenator.listMessages({
       messageBox: 'coinflip_winnings'
     })
-    const aliceMessages = messages.filter(x => x.sender === challenge.from)
+    const aliceMessages = messages.filter(x => {
+      try {
+        const body = JSON.parse(x.body)
+        return x.sender === challenge.from && body.offerTXID === challenge.tx.txid
+      } catch (e) {
+        return false
+      }
+    })
     if (aliceMessages.length < 1) continue
     await tokenator.acknowledgeMessage({
       messageIds: [aliceMessages[0].messageId]
@@ -534,8 +548,6 @@ export const acceptChallenge = async (
   return 'you-win'
 }
 
-window.a = acceptChallenge
-
 export const rejectChallenge = async (challenge: IncomingChallenge) => {
   await tokenator.acknowledgeMessage({
     messageIds: [challenge.id]
@@ -548,16 +560,4 @@ export const rejectChallenge = async (challenge: IncomingChallenge) => {
       offerTXID: challenge.tx.txid
     }
   })
-}
-
-window.r = rejectChallenge
-
-window.rlm = async () => {
-  const li = await checkForChallenges()
-  await rejectChallenge(li[li.length - 1])
-}
-
-window.alm = async () => {
-  const li = await checkForChallenges()
-  return await acceptChallenge(li[li.length - 1])
 }
