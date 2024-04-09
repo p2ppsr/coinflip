@@ -1,3 +1,5 @@
+// TODO: Complete these types
+
 declare module '@babbage/react-prompt' {
   const BabbagePrompt: any
   export default BabbagePrompt
@@ -11,5 +13,6 @@ declare module '@babbage/tokenator' {
 declare module 'metanet-identity-react' {
   const IdentityCard: any
   const IdentitySearchField: any
-  export { IdentityCard, IdentitySearchField }
+  const Identity: any
+  export { IdentityCard, IdentitySearchField, Identity }
 }

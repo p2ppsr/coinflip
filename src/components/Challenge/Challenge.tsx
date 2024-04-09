@@ -22,6 +22,7 @@ import { useChallengeStore } from '../../stores/stores'
 // Assets
 import { FaBell } from 'react-icons/fa'
 import coinflipAnimaion from '../../assets/coinflipAnimation.json'
+import { Identity } from "../../types/interfaces"
 
 
 export const Challenge = () => {

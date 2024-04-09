@@ -18,6 +18,7 @@ import Invitations from './components/MyChallenges/MyChallenges'
 import useChallenges from './utils/useChallenges'
 import { checkForChallenges } from './operations'
 import { useChallengeStore } from './stores/stores'
+import { IdentityCard } from "metanet-identity-react"
 
 const App = () => {
   // State ============================================================

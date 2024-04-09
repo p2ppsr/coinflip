@@ -17,14 +17,15 @@ import { discoverByIdentityKey } from '@babbage/sdk-ts'
 import { Button, Stack } from '@mui/material'
 import { toast } from 'react-toastify'
 import { IdentityCard } from 'metanet-identity-react'
-import React from "react"
+import React from 'react'
 
 const MyChallenges = () => {
   const navigate = useNavigate()
 
-  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+  const [challenges, setChallenges, setFlipResult] = useChallengeStore((state: any) => [
     state.challenges,
-    state.setChallenges
+    state.setChallenges,
+    state.setFlipResult
   ])
 
   // Navigate back to home if there are no challenges
@@ -72,7 +73,9 @@ const MyChallenges = () => {
                         //   theirChoice: theirChoice
                         // })
                         navigate('/coinflip')
-                        await acceptChallenge(challenge)
+                        const result = await acceptChallenge(challenge)
+                        console.log('RESULT :', result)
+                        setFlipResult(result)
                       }}
                     >
                       ✓
