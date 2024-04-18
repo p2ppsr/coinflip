@@ -71,7 +71,7 @@ export const createChallenge = async (
 
   const alice = PubKey(bsv.PublicKey.fromString(aliceHex).toByteString())
   const bobPK = PubKey(bsv.PublicKey.fromString(bobHex).toByteString())
-  const timeout = BigInt(Math.round(Date.now() / 1000) + 60) // 1-minute timeout
+  const timeout = BigInt(Math.round(Date.now() / 1000) + 300) // 5-minute timeout
   const coinflipInstance = new CoinflipContract(alice, bobPK, aliceHash, timeout, 0n, -1n)
   const offerScript = coinflipInstance.lockingScript.toHex()
 
@@ -95,9 +95,9 @@ export const createChallenge = async (
   let rejectionReason: 'rejected' | 'expired' = 'expired'
 
   // Wait for Bob to accept
-  for (let i = 0; i < 30; i += 5) {
+  for (let i = 0; i < 180; i++) {
     console.log('Waiting for Bob to accept...')
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     const messages = await tokenator.listMessages({
       messageBox: 'coinflip_responses'
     })
@@ -394,10 +394,10 @@ export const acceptChallenge = async (
 
   // Wait for Alice to respond
   while (true) {
-    console.log('Waiting for Alice for 5 seconds')
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    console.log('Waiting for Alice...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
     const time = Math.round(Date.now() / 1000)
-    if (time > challenge.expires + 5) break
+    if (time > challenge.expires + 3) break
     const messages = await tokenator.listMessages({
       messageBox: 'coinflip_winnings'
     })
