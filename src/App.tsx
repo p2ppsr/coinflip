@@ -15,20 +15,14 @@ import useAsyncEffect from 'use-async-effect'
 import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
 import Invitations from './components/MyChallenges/MyChallenges'
-import useChallenges from './utils/useChallenges'
-import { checkForChallenges } from './operations'
+import checkForChallenges from './logic/checkForChallenges'
 import { useChallengeStore } from './stores/stores'
-import { IdentityCard } from "metanet-identity-react"
 
 const App = () => {
-  // State ============================================================
-
-  const [challenges, setChallenges] = useChallengeStore((state: any) => [
+  const [, setChallenges] = useChallengeStore((state: any) => [
     state.challenges,
-    state.setChallenges,
+    state.setChallenges
   ])
-
-  // Lifecycle ======================================================
 
   const challengePollTime = 4000 // poll challenges every 4s
   useAsyncEffect(async () => {
@@ -52,32 +46,32 @@ const App = () => {
   return (
     <BrowserRouter>
       <ToastContainer
-        position="top-center"
+        position='top-center'
         autoClose={5000}
         hideProgressBar={false}
-        newestOnTop={true}
+        newestOnTop
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light"
+        theme='light'
         transition={Bounce}
       />
 
-      <div className="container" style={{ marginTop: '7vh' }}>
-        <img src={babbageLogo} width="150" />
+      <div className='container' style={{ marginTop: '7vh' }}>
+        <img src={babbageLogo} width='150' />
         <img
           src={coinFlipLogo}
-          width="200"
+          width='200'
           style={{ borderBottom: '1px solid rgba(255,255,255,0.2', paddingBottom: '1rem' }}
         />
         <Routes>
-          <Route path="/" element={<Challenge />} />
-          <Route path="/coinflip" element={<Coinflip />} />
-          <Route path="/myChallenges" element={<Invitations />} />
+          <Route path='/' element={<Challenge />} />
+          <Route path='/coinflip' element={<Coinflip />} />
+          <Route path='/myChallenges' element={<Invitations />} />
         </Routes>
-        
+
       </div>
     </BrowserRouter>
   )
@@ -85,8 +79,6 @@ const App = () => {
 
 export default App
 
-/* 
-
-
+/*
 
 */

@@ -1,4 +1,3 @@
-struct __scrypt_ts_Outpoint {  bytes txid;  int outputIndex;}  struct __scrypt_ts_UTXO {  __scrypt_ts_Outpoint outpoint;  bytes script;  int value;}  struct __scrypt_ts_ScriptContext {  bytes version;  bytes hashPrevouts;  bytes hashSequence;  bytes hashOutputs;  int locktime;  int sequence;  SigHashType sigHashType;  __scrypt_ts_UTXO utxo;  SigHashPreimage preimage;}
 
 contract CoinflipContract {
   @state Sha256 aliceHash;
@@ -7,7 +6,10 @@ contract CoinflipContract {
   @state PubKey bob;
   @state int bobNumber;
   @state int contractState;
-  __scrypt_ts_ScriptContext ctx;
+  bytes __scrypt_ts_ctx_hashoutputs;
+  int __scrypt_ts_ctx_locktime;
+  int __scrypt_ts_ctx_sequence;
+  int __scrypt_ts_ctx_value;
   constructor(PubKey alice, PubKey bob, Sha256 aliceHash, int timeout, int contractState, int bobNumber) {
     this.aliceHash = aliceHash;
     this.contractState = contractState;
@@ -18,23 +20,34 @@ contract CoinflipContract {
   }
   public function cancelOffer(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
     require(this.contractState == 0);
     require(checkSig(sig, this.alice));
   }
   public function acceptOffer(Sig sig, int bobNumber, SigHashPreimage __scrypt_ts_txPreimage) {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
-    this.ctx = CoinflipContract.createCtx(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
     require(this.contractState == 0);
     require(checkSig(sig, this.bob));
     require(bobNumber == 0 || bobNumber == 1);
     this.bobNumber = bobNumber;
     this.contractState = 1;
-    bytes output = this.buildStateOutput(this.ctx.utxo.value * 2);
+    bytes output = this.buildStateOutput(this.__scrypt_ts_ctx_value * 2);
     Sha256 hashOutputs = hash256(output);
-    require(this.ctx.hashOutputs == hashOutputs);
+    require(this.__scrypt_ts_ctx_hashoutputs == hashOutputs);
   }
   public function aliceRevealsWinner(Sig sig, bytes aliceNonce, int aliceNumber, SigHashPreimage __scrypt_ts_txPreimage) {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
     require(this.contractState == 1);
     require(len(aliceNonce) == 32);
     Sha256 hashForVerification = hash256(aliceNonce + num2bin(aliceNumber, 1));
@@ -49,7 +62,10 @@ contract CoinflipContract {
   }
   public function bobWinsAutomaticallyAfterDelay(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
     require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
-    this.ctx = CoinflipContract.createCtx(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
     require(this.contractState == 1);
     require(checkSig(sig, this.bob));
     require(this.timeLock(this.timeout));
@@ -59,7 +75,6 @@ contract CoinflipContract {
     this.bobNumber = bobNumber;
     return true;
   }
-  static function createCtx(SigHashPreimage txPreimage) : __scrypt_ts_ScriptContext {  bytes version = SigHash.nVersion(txPreimage);  bytes hashPrevouts = SigHash.hashPrevouts(txPreimage);  bytes hashSequence = SigHash.hashSequence(txPreimage);  bytes hashOutputs = SigHash.hashOutputs(txPreimage);  int locktime = SigHash.nLocktime(txPreimage);  int sequence = SigHash.nSequence(txPreimage);  SigHashType sigHashType = SigHash.sigHashType(txPreimage);  bytes txid = SigHash.outpoint(txPreimage)[0 : 32];  int outputIndex = unpack(SigHash.outpoint(txPreimage)[32 :]);  __scrypt_ts_Outpoint outpoint = { txid, outputIndex };  bytes scriptCode = SigHash.scriptCode(txPreimage);  int value = SigHash.value(txPreimage);  __scrypt_ts_UTXO utxo = { outpoint, scriptCode, value };  return { version, hashPrevouts, hashSequence, hashOutputs, locktime, sequence, sigHashType, utxo, txPreimage };}
-  function timeLock(int locktime): bool {  bool res = true;  res = this.ctx.sequence < 0xffffffff;  if (    locktime < 500000000  ) {    res = res && this.ctx.locktime < 500000000;  }  return res && this.ctx.locktime >= locktime;}
-  function buildStateOutput(int amount) : bytes {  bytes script = this.getStateScript();  return Utils.buildOutput(script, amount);}
+  function timeLock(int locktime): bool {  bool res = true;  res = this.__scrypt_ts_ctx_sequence < 0xffffffff;  if (    locktime < 500000000  ) {    res = res && this.__scrypt_ts_ctx_locktime < 500000000;  }  return res && this.__scrypt_ts_ctx_locktime >= locktime;}
+  function buildStateOutput(int amount) : bytes {  return Utils.buildOutput(this.getStateScript(), amount);}
 }

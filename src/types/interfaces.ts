@@ -7,8 +7,8 @@
 // }
 
 export interface Identity {
-  identityKey: string;
-  name: string;
+  identityKey: string
+  name: string
 }
 
 export interface ChallengeValues {

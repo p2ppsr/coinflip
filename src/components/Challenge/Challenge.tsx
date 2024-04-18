@@ -1,12 +1,12 @@
 // Dependencies
-import React from "react"
+import React from 'react'
 import { Button } from '@mui/material'
 import { IdentitySearchField } from 'metanet-identity-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createChallenge } from '../../operations'
-import Lottie from "react-lottie"
-import constants from "../../utils/constants"
+import createChallenge from '../../logic/createChallenge'
+import Lottie from 'react-lottie'
+import constants from '../../utils/constants'
 
 // Utils
 import { objectHasEmptyValues } from '../../utils/utils'
@@ -22,8 +22,7 @@ import { useChallengeStore } from '../../stores/stores'
 // Assets
 import { FaBell } from 'react-icons/fa'
 import coinflipAnimaion from '../../assets/coinflipAnimation.json'
-import { Identity } from "../../types/interfaces"
-
+import { Identity } from '../../types/interfaces'
 
 export const Challenge = () => {
   const navigate = useNavigate()
@@ -86,8 +85,8 @@ export const Challenge = () => {
       {challenges.length !== 0 && (
         <>
           <Button
-            variant="outlined"
-            id="myChallengesButton"
+            variant='outlined'
+            id='myChallengesButton'
             onClick={() => {
               navigate('/myChallenges')
             }}
@@ -115,7 +114,7 @@ export const Challenge = () => {
                 onIdentitySelected={(identity: Identity) => {
                   setChallengeValues({
                     ...challengeValues,
-                    identity: identity,
+                    identity,
                     sender: identity.name
                   })
                   console.log(identity)
@@ -125,11 +124,11 @@ export const Challenge = () => {
             </div>
           </div>
 
-          <div className="fieldContainer">
+          <div className='fieldContainer'>
             <p>Enter an amount to bet:</p>
             <input
-              className="userInput"
-              type="number"
+              className='userInput'
+              type='number'
               onChange={e => {
                 setChallengeValues({
                   ...challengeValues,
@@ -139,11 +138,11 @@ export const Challenge = () => {
             />
           </div>
 
-          <div className="fieldContainer">
+          <div className='fieldContainer'>
             <p>Heads or tails?</p>
-            <div className="flex" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div className='flex' style={{ display: 'flex', justifyContent: 'space-between' }}>
               <Button
-                className="headsOrTailsButton"
+                className='headsOrTailsButton'
                 variant={challengeValues.senderCoinChoice === 0 ? 'contained' : 'outlined'}
                 onClick={() => handleHeadsOrTailsSelection(0)}
                 disableRipple
@@ -151,7 +150,7 @@ export const Challenge = () => {
                 Heads
               </Button>
               <Button
-                className="headsOrTailsButton"
+                className='headsOrTailsButton'
                 variant={challengeValues.senderCoinChoice === 1 ? 'contained' : 'outlined'}
                 onClick={() => handleHeadsOrTailsSelection(1)}
                 disableRipple
@@ -162,8 +161,8 @@ export const Challenge = () => {
           </div>
 
           <Button
-            variant="contained"
-            className="actionButton"
+            variant='contained'
+            className='actionButton'
             disabled={objectHasEmptyValues(challengeValues)}
             onClick={handleChallenge}
           >

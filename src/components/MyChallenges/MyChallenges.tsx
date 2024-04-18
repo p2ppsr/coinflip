@@ -5,15 +5,10 @@ import { useChallengeStore } from '../../stores/stores'
 
 // Styles
 import { useNavigate } from 'react-router-dom'
-import useAsyncEffect from 'use-async-effect'
-import {
-  IncomingChallenge,
-  acceptChallenge,
-  checkForChallenges,
-  rejectChallenge
-} from '../../operations'
+import IncomingChallenge from '../../logic/IncomingChallenge'
+import acceptChallenge from '../../logic/acceptChallenge'
+import rejectChallenge from '../../logic/rejectChallenge'
 import './MyChallenges.scss'
-import { discoverByIdentityKey } from '@babbage/sdk-ts'
 import { Button, Stack } from '@mui/material'
 import { toast } from 'react-toastify'
 import { IdentityCard } from 'metanet-identity-react'
@@ -34,8 +29,8 @@ const MyChallenges = () => {
   }, [challenges])
 
   return (
-    <div className="container myChallengesContainer">
-      <IoIosArrowBack color="white" className="backArrow" onClick={() => navigate('/')} />
+    <div className='container myChallengesContainer'>
+      <IoIosArrowBack color='white' className='backArrow' onClick={() => navigate('/')} />
       <h1>My Challenges</h1>
       <table>
         <thead>
@@ -43,7 +38,7 @@ const MyChallenges = () => {
             <th>From</th>
             <th>Amount</th>
             <th>They picked</th>
-            <th></th>
+            <th />
           </tr>
         </thead>
 
@@ -52,9 +47,9 @@ const MyChallenges = () => {
             challenges.map((challenge: IncomingChallenge, index: number) => {
               const { id, from, amount, tx, theirChoice, expires } = challenge
               return (
-                <tr className="myChallengesItem" key={index}>
+                <tr className='myChallengesItem' key={index}>
                   <td>
-                    <div className="identityCard">
+                    <div className='identityCard'>
                       <IdentityCard identityKey={id} />
                     </div>
                   </td>
@@ -62,8 +57,8 @@ const MyChallenges = () => {
                   <td>{theirChoice.charAt(0).toUpperCase() + theirChoice.slice(1)}</td>
                   <td style={{ textAlign: 'center' }}>
                     <Button
-                      variant="contained"
-                      color="success"
+                      variant='contained'
+                      color='success'
                       style={{ marginRight: '.5rem' }}
                       onClick={async () => {
                         // Set global values to be used in Coinflip.tsx
@@ -81,8 +76,8 @@ const MyChallenges = () => {
                       ✓
                     </Button>
                     <Button
-                      variant="contained"
-                      color="error"
+                      variant='contained'
+                      color='error'
                       onClick={() => {
                         // clearTokenatorMessage(challenge.messageId)
                         toast(({ closeToast }) => (
@@ -90,10 +85,10 @@ const MyChallenges = () => {
                             <p style={{ color: 'black' }}>
                               Are you sure you want to remove this challenge?
                             </p>
-                            <Stack direction="row" spacing={2} justifyContent="center">
+                            <Stack direction='row' spacing={2} justifyContent='center'>
                               <Button
-                                variant="contained"
-                                color="error"
+                                variant='contained'
+                                color='error'
                                 onClick={async () => {
                                   closeToast()
                                   try {
@@ -110,7 +105,7 @@ const MyChallenges = () => {
                                 Delete
                               </Button>
                               <Button
-                                variant="contained"
+                                variant='contained'
                                 onClick={closeToast}
                                 style={{ background: 'gray', color: 'white' }}
                               >

@@ -30,7 +30,9 @@
   },
   "scripts": {
     "start": "webpack serve --config webpack.dev.ts",
-    "build": "webpack --config webpack.prod.ts"
+    "build": "webpack --config webpack.prod.ts",
+    "lint": "ts-standard --fix .",
+    "compile": "scrypt-cli c"
   },
   "eslintConfig": {
     "extends": [
@@ -76,6 +78,7 @@
     "style-loader": "^3.3.4",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
+    "ts-standard": "^12.0.2",
     "typescript": "^5.3.3",
     "url-loader": "^4.1.1",
     "webpack": "^5.73.0",

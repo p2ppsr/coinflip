@@ -4,7 +4,7 @@ import App from './App.tsx'
 
 import { ThemeProvider, createTheme } from '@mui/material'
 
-export let theme = createTheme({
+export const theme = createTheme({
   palette: {
     primary: {
       main: '#fff'
@@ -28,7 +28,7 @@ export let theme = createTheme({
   }
 })
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <ThemeProvider theme={theme}>
     <App />
   </ThemeProvider>

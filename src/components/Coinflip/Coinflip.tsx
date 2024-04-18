@@ -63,22 +63,22 @@ const Coinflip = () => {
 
   return (
     <>
-      <div className="coinflipContainer">
+      <div className='coinflipContainer'>
         {coinIsFlipping ? (
           <Lottie options={coinFlipAnimationOptions} width={400} />
         ) : (
           flipResult !== null && (
             <div>
-              <img src={coinflipResultImage} id="coinflipResultImage" alt="Coin Flip Result" />
-              <h1 id="resultText">
+              <img src={coinflipResultImage} id='coinflipResultImage' alt='Coin Flip Result' />
+              <h1 id='resultText'>
                 {flipResult === 'you-win'
                   ? `You win! You have been awarded ${challengeValues.amount * 2} Satoshis.`
                   : `You lose! ${challengeValues.sender} has been awarded ${challengeValues.amount *
                       2} Satoshis.`}
               </h1>
               <Button
-                variant="contained"
-                className="actionButton"
+                variant='contained'
+                className='actionButton'
                 onClick={() => {
                   // Reset the flip result
                   setFlipResult(null)
