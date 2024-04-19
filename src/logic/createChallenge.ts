@@ -100,9 +100,9 @@ export default async (
               satoshis: amount * 2
             })
             const hashType =
-                            bsv.crypto.Signature.SIGHASH_NONE |
-                            bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-                            bsv.crypto.Signature.SIGHASH_FORKID
+              bsv.crypto.Signature.SIGHASH_NONE |
+              bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+              bsv.crypto.Signature.SIGHASH_FORKID
             const hashbuf = bsv.crypto.Hash.sha256(
               bsv.Transaction.Sighash.sighashPreimage(
                 bsvtx,
@@ -186,9 +186,9 @@ export default async (
         satoshis: amount
       })
       const hashType =
-                bsv.crypto.Signature.SIGHASH_NONE |
-                bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-                bsv.crypto.Signature.SIGHASH_FORKID
+        bsv.crypto.Signature.SIGHASH_NONE |
+        bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+        bsv.crypto.Signature.SIGHASH_FORKID
       const hashbuf = bsv.crypto.Hash.sha256(
         bsv.Transaction.Sighash.sighashPreimage(
           bsvtx,

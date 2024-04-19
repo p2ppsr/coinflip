@@ -37,9 +37,9 @@ export default async (
         })
       )
       const hashType =
-                bsv.crypto.Signature.SIGHASH_SINGLE |
-                bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-                bsv.crypto.Signature.SIGHASH_FORKID
+        bsv.crypto.Signature.SIGHASH_SINGLE |
+        bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+        bsv.crypto.Signature.SIGHASH_FORKID
       const hashbuf = bsv.crypto.Hash.sha256(
         bsv.Transaction.Sighash.sighashPreimage(
           bsvtx,
@@ -140,7 +140,7 @@ export default async (
     if (hashForVerification !== revelationInstance.aliceHash) {
       continue
     }
-    if (bobRandomOneOrZero === aliceMessage.number) {
+    if (bobRandomOneOrZero === BigInt(aliceMessage.number)) {
       return 'they-win'
     }
 
@@ -155,9 +155,9 @@ export default async (
           satoshis: challenge.amount * 2
         })
         const hashType =
-                    bsv.crypto.Signature.SIGHASH_NONE |
-                    bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-                    bsv.crypto.Signature.SIGHASH_FORKID
+          bsv.crypto.Signature.SIGHASH_NONE |
+          bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+          bsv.crypto.Signature.SIGHASH_FORKID
         const hashbuf = bsv.crypto.Hash.sha256(
           bsv.Transaction.Sighash.sighashPreimage(
             bsvtx,
@@ -218,9 +218,9 @@ export default async (
     bsvtx.inputs[0].sequenceNumber = 0xfffffffe
     bsvtx.nLockTime = challenge.expires + 5
     const hashType =
-            bsv.crypto.Signature.SIGHASH_NONE |
-            bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-            bsv.crypto.Signature.SIGHASH_FORKID
+      bsv.crypto.Signature.SIGHASH_NONE |
+      bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+      bsv.crypto.Signature.SIGHASH_FORKID
     const hashbuf = bsv.crypto.Hash.sha256(
       bsv.Transaction.Sighash.sighashPreimage(
         bsvtx,
