@@ -71,7 +71,7 @@ const App = () => {
     if (!counterparty.identityKey) {
       return toast.error('Search for someone to play with!')
     }
-    if (Number(amount) < 500) {
+    if (Number(amountInSats) < 500) {
       return toast.error('Use at least 500 satoshis in your challenge to cover fees.')
     }
     try {
