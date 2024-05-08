@@ -57,17 +57,20 @@ const useStyles = makeStyles({
 })
 
 const App = () => {
-  const [amount, setAmount] = useState<string | number>(0)
+  const [amount, setAmount] = useState<string | number | undefined>(undefined)
   const [incomingChallenges, setIncomingChallenges] = useState<IncomingChallenge[]>([])
   const [counterparty, setCounterparty] = useState<{ identityKey?: string, name?: string, iconURL?: string }>({})
   const [state, setState] = useState<'start' | 'waiting' | 'you-win' | 'they-win' | 'flipping' | 'rejected' | 'expired'>('start')
   const [loading, setLoading] = useState(false)
   const classes = useStyles()
-  const [amountInSats, setAmountInSats] = useState(1000)
+  const [amountInSats, setAmountInSats] = useState(undefined)
   const [currencySymbol, setCurrencySymbol] = useState('$')
   const currencyConverter = new CurrencyConverter()
 
   const handleChallenge = (side: 'heads' | 'tails') => async () => {
+    if (typeof amountInSats === 'undefined') {
+      return toast.error('Enter an amount for the challenge!')
+    }
     if (!counterparty.identityKey) {
       return toast.error('Search for someone to play with!')
     }
