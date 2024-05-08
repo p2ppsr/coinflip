@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { createChallenge, checkForChallenges, acceptChallenge, rejectChallenge, IncomingChallenge } from './logic/index'
-import { Typography, TextField, Button, IconButton, CircularProgress } from '@mui/material'
+import { Typography, TextField, Button, IconButton, CircularProgress, InputAdornment } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import babbageLogo from './assets/babbageLogo.png'
 import coinFlipLogo from './assets/coinflipLogo.svg'
@@ -11,6 +11,9 @@ import { IdentitySearchField, IdentityCard, Identity } from 'metanet-identity-re
 import { theme } from '.'
 import constants from './utils/constants'
 import Flip from './components/Flip'
+import { AmountDisplay, AmountInputField } from 'amountinator-react'
+import useAsyncEffect from 'use-async-effect'
+import { CurrencyConverter } from 'amountinator'
 
 const useStyles = makeStyles({
   '@global body': {
@@ -54,12 +57,15 @@ const useStyles = makeStyles({
 })
 
 const App = () => {
-  const [amount, setAmount] = useState<string | number>(1000)
+  const [amount, setAmount] = useState<string | number>(1)
   const [incomingChallenges, setIncomingChallenges] = useState<IncomingChallenge[]>([])
   const [counterparty, setCounterparty] = useState<{ identityKey?: string, name?: string, iconURL?: string }>({})
   const [state, setState] = useState<'start' | 'waiting' | 'you-win' | 'they-win' | 'flipping' | 'rejected' | 'expired'>('start')
   const [loading, setLoading] = useState(false)
   const classes = useStyles()
+  const [amountInSats, setAmountInSats] = useState(1000)
+  const [currencySymbol, setCurrencySymbol] = useState('$')
+  const currencyConverter = new CurrencyConverter()
 
   const handleChallenge = (side: 'heads' | 'tails') => async () => {
     if (!counterparty.identityKey) {
@@ -70,7 +76,7 @@ const App = () => {
     }
     try {
       setState('waiting')
-      const result = await createChallenge(counterparty.identityKey as string, Number(amount), side)
+      const result = await createChallenge(counterparty.identityKey as string, Number(amountInSats), side)
       setState(result)
       if (result === 'you-win') {
         toast.success('🎉 You won! 🎉')
@@ -143,6 +149,24 @@ const App = () => {
     }
   }, [state])
 
+  useAsyncEffect(async () => {
+    await currencyConverter.initialize()
+    setCurrencySymbol(currencyConverter.getCurrencySymbol())
+  }, [])
+
+  const handleAmountChange = useCallback(async (event: any) => {
+    const input = event.target.value.replace(/[^0-9.]/g, '')
+    setAmount(input)
+    if (input !== amount) {
+      try {
+        const satoshis = await currencyConverter.convertToSatoshis(Number(input))
+        setAmountInSats(satoshis || 1000)
+      } catch (error) {
+        console.error('Error converting currency:', error)
+      }
+    }
+  }, [])
+
   const incomingChallengesGrid = <div className={classes.challenges_grid}>
     <Typography color='primary' variant='h6'><b>Opponent</b></Typography>
     <Typography color='primary' variant='h6'><b>Amount</b></Typography>
@@ -153,7 +177,9 @@ const App = () => {
       <div>
         <IdentityCard identityKey={challenge.from} themeMode='dark' />
       </div>
-      <Typography color='primary'>{challenge.amount}</Typography>
+      <Typography color={'white'}>
+        <AmountDisplay paymentAmount={challenge.amount} />
+      </Typography>
       {challenge.theirChoice === 'heads'
         ? <img className={classes.call_icon} src={headsIcon} alt='heads' />
         : <img className={classes.call_icon} src={tailsIcon} alt='tails' />}
@@ -170,7 +196,10 @@ const App = () => {
         label='Amount'
         type='number'
         value={amount}
-        onChange={e => setAmount(e.target.value)}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>
+        }}
+        onChange={handleAmountChange}
       />
       <br />
       <br />
@@ -254,7 +283,10 @@ const App = () => {
   } else if (state === 'you-win') {
     stateUI = <div>
       <Typography color='primary' variant='h3' paragraph>You won!</Typography>
-      <Typography color='secondary' paragraph>Your money has been doubled and {counterparty.name || 'your opponent'} has paid you {amount} satoshis!</Typography>
+      <Typography color='secondary' paragraph>Your money has been doubled and {counterparty.name || 'your opponent'} has paid you</Typography>
+      <Typography color={'secondary'}>
+        <AmountDisplay paymentAmount={amount} />
+      </Typography>
       <br />
       <br />
       <Button onClick={() => setState('start')}>
