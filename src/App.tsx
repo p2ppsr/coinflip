@@ -109,6 +109,8 @@ const App = () => {
       } else {
         toast.info('💩 You lose! 💩')
       }
+      setAmountInSats(undefined)
+      setAmount(undefined)
     } catch (e) {
       console.error('OPERATIONS ERROR FOLLOWS:')
       console.error(e)
