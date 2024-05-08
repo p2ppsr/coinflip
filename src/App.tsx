@@ -285,7 +285,7 @@ const App = () => {
       <Typography color='primary' variant='h3' paragraph>You won!</Typography>
       <Typography color='secondary' paragraph>Your money has been doubled and {counterparty.name || 'your opponent'} has paid you</Typography>
       <Typography color={'white'} variant='h4'>
-        <AmountDisplay paymentAmount={amount} />
+        <AmountDisplay paymentAmount={amountInSats} />
       </Typography>
       <br />
       <br />
