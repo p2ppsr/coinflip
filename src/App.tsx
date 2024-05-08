@@ -11,7 +11,7 @@ import { IdentitySearchField, IdentityCard, Identity } from 'metanet-identity-re
 import { theme } from '.'
 import constants from './utils/constants'
 import Flip from './components/Flip'
-import { AmountDisplay, AmountInputField } from 'amountinator-react'
+import { AmountDisplay, AmountInputField, useCurrencyDisplay } from 'amountinator-react'
 import useAsyncEffect from 'use-async-effect'
 import { CurrencyConverter } from 'amountinator'
 
@@ -98,7 +98,7 @@ const App = () => {
   const handleAccept = async (chal: IncomingChallenge) => {
     try {
       setState('flipping')
-      setAmount(chal.amount)
+      setAmountInSats(chal.amount)
       const result = await acceptChallenge(chal)
       setState(result)
       if (result === 'you-win') {
@@ -178,7 +178,7 @@ const App = () => {
         <IdentityCard identityKey={challenge.from} themeMode='dark' />
       </div>
       <Typography color={'white'}>
-        <AmountDisplay paymentAmount={challenge.amount} />
+        {/* <AmountDisplay paymentAmount={challenge.amount} /> */}
       </Typography>
       {challenge.theirChoice === 'heads'
         ? <img className={classes.call_icon} src={headsIcon} alt='heads' />
