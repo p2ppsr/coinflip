@@ -57,7 +57,7 @@ const useStyles = makeStyles({
 })
 
 const App = () => {
-  const [amount, setAmount] = useState<string | number>(1)
+  const [amount, setAmount] = useState<string | number>(0)
   const [incomingChallenges, setIncomingChallenges] = useState<IncomingChallenge[]>([])
   const [counterparty, setCounterparty] = useState<{ identityKey?: string, name?: string, iconURL?: string }>({})
   const [state, setState] = useState<'start' | 'waiting' | 'you-win' | 'they-win' | 'flipping' | 'rejected' | 'expired'>('start')
@@ -178,7 +178,7 @@ const App = () => {
         <IdentityCard identityKey={challenge.from} themeMode='dark' />
       </div>
       <Typography color={'white'}>
-        {/* <AmountDisplay paymentAmount={challenge.amount} /> */}
+        <AmountDisplay paymentAmount={challenge.amount} />
       </Typography>
       {challenge.theirChoice === 'heads'
         ? <img className={classes.call_icon} src={headsIcon} alt='heads' />
