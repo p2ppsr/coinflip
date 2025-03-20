@@ -1,0 +1,80 @@
+
+contract Coinflip {
+  @state Sha256 aliceHash;
+  @state int timeout;
+  @state PubKey alice;
+  @state PubKey bob;
+  @state int bobNumber;
+  @state int contractState;
+  bytes __scrypt_ts_ctx_hashoutputs;
+  int __scrypt_ts_ctx_locktime;
+  int __scrypt_ts_ctx_sequence;
+  int __scrypt_ts_ctx_value;
+  constructor(PubKey alice, PubKey bob, Sha256 aliceHash, int timeout, int contractState, int bobNumber) {
+    this.aliceHash = aliceHash;
+    this.contractState = contractState;
+    this.bobNumber = bobNumber;
+    this.alice = alice;
+    this.bob = bob;
+    this.timeout = timeout;
+  }
+  public function cancelOffer(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
+    require(this.contractState == 0);
+    require(checkSig(sig, this.alice));
+  }
+  public function acceptOffer(Sig sig, int bobNumber, SigHashPreimage __scrypt_ts_txPreimage) {
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c3')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
+    require(this.contractState == 0);
+    require(checkSig(sig, this.bob));
+    require(bobNumber == 0 || bobNumber == 1);
+    this.bobNumber = bobNumber;
+    this.contractState = 1;
+    bytes output = this.buildStateOutput(this.__scrypt_ts_ctx_value * 2);
+    Sha256 hashOutputs = hash256(output);
+    require(this.__scrypt_ts_ctx_hashoutputs == hashOutputs);
+  }
+  public function aliceRevealsWinner(Sig sig, bytes aliceNonce, int aliceNumber, SigHashPreimage __scrypt_ts_txPreimage) {
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
+    require(this.contractState == 1);
+    require(len(aliceNonce) == 32);
+    Sha256 hashForVerification = hash256(aliceNonce + num2bin(aliceNumber, 1));
+    require(hashForVerification == this.aliceHash);
+    require(aliceNumber == 0 || aliceNumber == 1);
+    if(this.bobNumber == aliceNumber) {
+        require(checkSig(sig, this.alice));
+      } else {
+        require(checkSig(sig, this.bob));
+      }
+    require(true);
+  }
+  public function bobWinsAutomaticallyAfterDelay(Sig sig, SigHashPreimage __scrypt_ts_txPreimage) {
+    require(Tx.checkPreimageSigHashType(__scrypt_ts_txPreimage, SigHashType(b'c2')));
+    this.__scrypt_ts_ctx_hashoutputs = SigHash.hashOutputs(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_locktime = SigHash.nLocktime(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_sequence = SigHash.nSequence(__scrypt_ts_txPreimage);
+    this.__scrypt_ts_ctx_value = SigHash.value(__scrypt_ts_txPreimage);
+    require(this.contractState == 1);
+    require(checkSig(sig, this.bob));
+    require(this.timeLock(this.timeout));
+  }
+  function transitionState(int bobNumber) : bool {
+    this.contractState = 1;
+    this.bobNumber = bobNumber;
+    return true;
+  }
+  function timeLock(int locktime): bool {  bool res = true;  res = this.__scrypt_ts_ctx_sequence < 0xffffffff;  if (    locktime < 500000000  ) {    res = res && this.__scrypt_ts_ctx_locktime < 500000000;  }  return res && this.__scrypt_ts_ctx_locktime >= locktime;}
+  function buildStateOutput(int amount) : bytes {  return Utils.buildOutput(this.getStateScript(), amount);}
+}

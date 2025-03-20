@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "errors": [],
+  "scryptfile": "Coinflip.scrypt",
+  "sourceMapFile": "Coinflip.scrypt.map",
+  "ctxMethods": [
+    "acceptOffer",
+    "bobWinsAutomaticallyAfterDelay"
+  ]
+}

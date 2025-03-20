@@ -1,0 +1,62 @@
+{
+  "name": "coinflip",
+  "version": "0.3.0",
+  "private": true,
+  "dependencies": {
+    "@bsv/backend": "file:../backend",
+    "@bsv/identity-react": "^1.0.6",
+    "@bsv/p2p": "^1.0.9",
+    "@bsv/sdk": "^1.4.9",
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.15.10",
+    "@mui/styles": "^5.15.15",
+    "framer-motion": "^11.0.6",
+    "lottie-web": "^5.12.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.0.1",
+    "react-lottie": "^1.2.4",
+    "react-router-dom": "^6.22.1",
+    "react-toastify": "^10.0.4",
+    "scrypt-ts": "^1.3.29",
+    "use-async-effect": "^2.2.7",
+    "zustand": "^4.5.1"
+  },
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "lint": "ts-standard --fix ."
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5"
+  }
+}

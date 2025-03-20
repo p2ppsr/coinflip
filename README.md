@@ -1,29 +1,64 @@
-<img src="https://github.com/p2ppsr/coinflip/assets/16784480/57c3a50e-dd9b-4b8b-837f-b84358d48918" width="300">
+## Meter for the New World
+If you have problems accessing hosts:
+`broadcasterResult.description: All local topical hosts have rejected the transaction.`
 
-<br/>
+Try using your browser with a command switch. Ensure you use a temporary profile if you do disable your security settings.
 
-<img src="https://github.com/p2ppsr/coinflip/assets/16784480/7f9e1715-8b1e-4d39-ada3-d349c8672055" width="300">
+For Linux:
+`brave-browser --disable-web-security --user-data-dir="/tmp/brave_dev"`
 
-<p>
-  Coinflip is an example application that combines Project Babbage's identity and transaction systems with <a href='https://scrypt.io/'>sCrypt's</a> smart contracts.
-</p>
+# BSV Project
 
-<h1>How it works:</h1>
+Standard BSV project structure.
 
-<p>
-  A user enters another user's MetaNet identity into the search bar, an amount to bet, and whether they would like to choose heads or tails.
-  <br/><br/>
-  After submitting the challenge, the recipient receives a notification, and may choose to accept or deny.
-  If accepted, satoshis will be collected from both users, and the total is awarded to the winner, based on random number generation.
-  <br/><br/>
-  While this is a simple example, it demonstrates the capacity for establishing digital contracts between two parties using
-  decentralized currency. Future applications may include stock options, delivery of goods and services,
-  and employment contracts, among others.
-</p>
+Helpful Links:
 
-<h1>To run locally:</h1>
-<ul>
-  <li>Clone the GitHub repo</li>
-  <li>npm i</li>
-  <li>npm run start</li>
-</ul>
+- [LARS (for local development)](https://github.com/bitcoin-sv/lars)
+- [CARS CLI (for cloud deployment)](https://github.com/bitcoin-sv/cars-cli)
+- [RUN YOUR OWN CARS NODE](https://github.com/bitcoin-sv/cars-node)
+- [Specification for deployment-info.json](https://github.com/bitcoin-sv/BRCs/blob/master/apps/0102.md)
+
+## Getting Started
+
+- Clone this repository
+- Run `npm i` to install dependencies
+- Run `npm run lars` to configure the local environment according to your needs
+- Use `npm run start` to spin up and start writing code
+- When you're ready to publish your project, start by running `npm run cars` and configuring one (or, especially for overlays, ideally multiple) hosting provider(s)
+- For each of your configurations, execute `npm run build` to create CARS project artifacts
+- Deploy with `npm run deploy` and your project will be online
+- Use `cars` interactively, or visit your hosting provider(s) web portals, to view logs, configure custom domains, and pay your hosting bills
+- Share your new BSV project, it is now online!
+
+## Directory Structure
+
+The project structure is roughly as follows, although it can vary by project.
+
+```
+| - deployment-info.json
+| - package.json
+| - local-data/
+| - frontend/
+  | - package.json
+  | - webpack.config.js
+  | - src/...
+  | - public/...
+  | - build/...
+| - backend/
+  | - package.json
+  | - tsconfig.json
+  | - mod.ts
+  | - src/
+    | - contracts/...
+    | - lookup-services/...
+    | - topic-managers/...
+    | - script-templates/...
+  | - artifacts/
+  | - dist/
+```
+
+The one constant is `deployment-info.json`.
+
+## License
+
+[Open BSV License](./LICENSE.txt)
