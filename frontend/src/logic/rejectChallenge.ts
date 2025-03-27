@@ -1,4 +1,4 @@
-import { Transaction } from '@bsv/sdk'
+import { Transaction, Utils } from '@bsv/sdk'
 import constants from '../utils/constants'
 import IncomingChallenge from './IncomingChallenge'
 
@@ -11,7 +11,7 @@ export default async (challenge: IncomingChallenge): Promise<void> => {
     messageBox: 'coinflip_responses',
     body: {
       action: 'reject',
-      offerTXID: Transaction.fromAtomicBEEF(challenge.tx).id('hex')
+      offerTXID: Transaction.fromAtomicBEEF(Utils.toArray(challenge.tx, 'base64')).id('hex')
     }
   })
 }

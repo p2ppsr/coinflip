@@ -49,7 +49,7 @@ export default async (
       }
     ],
     options: {
-      acceptDelayedBroadcast: false,
+      acceptDelayedBroadcast: true,
       randomizeOutputs: false
     }
   })
@@ -57,7 +57,7 @@ export default async (
   await constants.messageBoxClient.sendMessage({
     recipient: bob,
     messageBox: 'coinflip_inbox',
-    body: { choice, offerTX: Utils.toUTF8(offerTX!) }
+    body: { choice, offerTX: Utils.toBase64(offerTX!) }
   })
   let rejectionReason: 'rejected' | 'expired' = 'expired'
 
@@ -82,7 +82,7 @@ export default async (
     // If Bob accepts reveal the number else fall through to rejection
     if (bobResponse.action === 'accept') {
       console.log('Alice got acceptance back!', bobResponse)
-      const acceptTX: AtomicBEEF = Utils.toArray(bobResponse.acceptTX, 'utf8')
+      const acceptTX: AtomicBEEF = Utils.toArray(bobResponse.acceptTX, 'base64')
       const parsedAcceptTX = new bsv.Transaction(
         Transaction.fromAtomicBEEF(acceptTX).toHex()
       )
@@ -137,7 +137,7 @@ export default async (
           }
         )
         await constants.walletClient.createAction({
-          inputBEEF: acceptTX,
+          inputBEEF: Utils.toArray(acceptTX, 'base64'),
           inputs: [{
             outpoint: `${parsedAcceptTX.id}.0`,
             unlockingScript: winScript.toHex(),
@@ -145,7 +145,7 @@ export default async (
           }],
           description: 'You win a coin flip',
           options: {
-            acceptDelayedBroadcast: false
+            acceptDelayedBroadcast: true
           }
         })
       } else {
@@ -214,7 +214,7 @@ export default async (
     }
   )
   await constants.walletClient.createAction({
-    inputBEEF: offerTX,
+    inputBEEF: Utils.toArray(offerTX, 'base64'),
     inputs: [{
       outpoint: `${offerTXID}.0`,
       unlockingScript: unlockingScript.toHex(),
@@ -222,7 +222,7 @@ export default async (
     }],
     description: `Cancel ${rejectionReason} coin flip`,
     options: {
-      acceptDelayedBroadcast: false
+      acceptDelayedBroadcast: true
     }
   })
   console.log('Recovered coins after rejection.')

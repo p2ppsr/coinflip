@@ -9,7 +9,7 @@ Coinflip.loadArtifact(CoinflipArtifact)
 export default async (
   challenge: IncomingChallenge
 ): Promise<'you-win' | 'they-win'> => {
-  const parsedOfferTX = Transaction.fromAtomicBEEF(challenge.tx)
+  const parsedOfferTX = Transaction.fromAtomicBEEF(Utils.toArray(challenge.tx, 'base64'))
   const offerScript = parsedOfferTX.outputs[0].lockingScript
   const coinflipInstance: Coinflip = Coinflip.fromLockingScript(
     offerScript.toHex()
@@ -24,7 +24,7 @@ export default async (
     async (self: Coinflip) => {
       const bsvtx = new bsv.Transaction()
       bsvtx.from({
-        txId: Transaction.fromAtomicBEEF(challenge.tx).id('hex'),
+        txId: Transaction.fromAtomicBEEF(Utils.toArray(challenge.tx, 'base64')).id('hex'),
         outputIndex: 0,
         script: offerScript.toHex(),
         satoshis: challenge.amount
@@ -67,7 +67,7 @@ export default async (
   console.log('unlocking script', unlockingScript)
   // Create the action
   const { tx: acceptTX, txid: acceptTXID } = await constants.walletClient.createAction({
-    inputBEEF: challenge.tx,
+    inputBEEF: Utils.toArray(challenge.tx, 'base64'),
     inputs: [{
       outpoint: `${parsedOfferTX.id('hex')}.0`,
       unlockingScript: unlockingScript.toHex(),
@@ -83,7 +83,7 @@ export default async (
     ],
     description: 'Accept a coin flip bet',
     options: {
-      acceptDelayedBroadcast: false,
+      acceptDelayedBroadcast: true,
       randomizeOutputs: false
     }
   })
@@ -98,7 +98,7 @@ export default async (
     messageBox: 'coinflip_responses',
     body: {
       action: 'accept',
-      acceptTX: Utils.toUTF8(acceptTX!),
+      acceptTX: Utils.toBase64(acceptTX!),
       offerTXID: parsedOfferTX.id('hex')
     }
   })
@@ -181,7 +181,7 @@ export default async (
       }
     )
     await constants.walletClient.createAction({
-      inputBEEF: acceptTX,
+      inputBEEF: Utils.toArray(acceptTX, 'base64'),
       inputs: [{
         outpoint: `${acceptTXID}.0`,
         unlockingScript: winScript.toHex(),
@@ -189,7 +189,7 @@ export default async (
       }],
       description: 'You win a coin flip',
       options: {
-        acceptDelayedBroadcast: false
+        acceptDelayedBroadcast: true
       }
     })
     return 'you-win'
@@ -236,7 +236,7 @@ export default async (
     self.bobWinsAutomaticallyAfterDelay(Sig(toByteString(signature.toTxFormat().toString('hex'))))
   })
   await constants.walletClient.createAction({
-    inputBEEF: acceptTX,
+    inputBEEF: Utils.toArray(acceptTX, 'base64'),
     inputs: [{
       outpoint: `${acceptTXID}.0`,
       unlockingScript: reclaimScript.toHex(),
@@ -246,7 +246,7 @@ export default async (
     lockTime: challenge.expires + 5,
     description: 'You win a coin flip',
     options: {
-      acceptDelayedBroadcast: false
+      acceptDelayedBroadcast: true
     }
   })
   console.log('Recovered coins after non-responsive opponent.')

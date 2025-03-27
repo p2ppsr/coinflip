@@ -14,7 +14,7 @@ export default async (): Promise<IncomingChallenge[]> => {
     async (chal): Promise<IncomingChallenge | undefined> => {
       try {
         const body = JSON.parse(chal.body)
-        const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'utf8'))
+        const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'base64'))
         const instance: Coinflip = Coinflip.fromLockingScript(
           parsedTX.outputs[0].lockingScript.toHex()
         ) as unknown as Coinflip
