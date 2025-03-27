@@ -3,13 +3,14 @@ import { Coinflip, CoinflipArtifact } from '@bsv/backend'
 import constants from '../utils/constants'
 import { sleep, verifyTruthy } from '../utils/utils'
 import IncomingChallenge from './IncomingChallenge'
+import { Transaction, Utils } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (
   challenge: IncomingChallenge
 ): Promise<'you-win' | 'they-win'> => {
-  const parsedOfferTX = new bsv.Transaction(challenge.tx.rawTx)
-  const offerScript = parsedOfferTX.outputs[0].script
+  const parsedOfferTX = Transaction.fromAtomicBEEF(challenge.tx)
+  const offerScript = parsedOfferTX.outputs[0].lockingScript
   const coinflipInstance: Coinflip = Coinflip.fromLockingScript(
     offerScript.toHex()
   ) as Coinflip
@@ -23,7 +24,7 @@ export default async (
     async (self: Coinflip) => {
       const bsvtx = new bsv.Transaction()
       bsvtx.from({
-        txId: challenge.tx.txid,
+        txId: Transaction.fromAtomicBEEF(challenge.tx).id('hex'),
         outputIndex: 0,
         script: offerScript.toHex(),
         satoshis: challenge.amount
@@ -47,47 +48,44 @@ export default async (
           new bsv.crypto.BN(challenge.amount)
         )
       )
-      const SDKSignature = await createSignature({
+      const { signature: SDKSignature } = await constants.walletClient.createSignature({
         protocolID: [0, 'coinflip'],
         keyID: '1',
         counterparty: challenge.from,
-        data: hashbuf
+        data: Array.from(hashbuf)
       })
       const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
       signature.nhashtype = hashType
       self.to = { tx: bsvtx, inputIndex: 0 }
-      self.from = { tx: parsedOfferTX, outputIndex: 0 }
-      console.log('before accept')
+      self.from = { tx: new bsv.Transaction(parsedOfferTX.toHex()), outputIndex: 0 }
       self.acceptOffer(
         Sig(toByteString(signature.toTxFormat().toString('hex'))),
         bobRandomOneOrZero
       )
-      console.log('after accept')
     }
   )
   console.log('unlocking script', unlockingScript)
   // Create the action
-  const acceptTX = await createAction({
-    inputs: {
-      [challenge.tx.txid]: {
-        ...verifyTruthy(challenge.tx),
-        outputsToRedeem: [
-          {
-            index: 0,
-            unlockingScript: unlockingScript.toHex()
-          }
-        ]
-      }
-    },
+  const { tx: acceptTX, txid: acceptTXID } = await constants.walletClient.createAction({
+    inputBEEF: challenge.tx,
+    inputs: [{
+      outpoint: `${parsedOfferTX.id('hex')}.0`,
+      unlockingScript: unlockingScript.toHex(),
+      inputDescription: 'Accept an affer'
+    }],
     outputs: [
       {
-        script: nextOutputScript.toHex(),
+        lockingScript: nextOutputScript.toHex(),
         satoshis: challenge.amount * 2,
-        basket: 'coinflip'
+        basket: 'coinflip',
+        outputDescription: 'Active coin flip offer token'
       }
     ],
     description: 'Accept a coin flip bet',
-    acceptDelayedBroadcast: false
+    options: {
+      acceptDelayedBroadcast: false,
+      randomizeOutputs: false
+    }
   })
   console.log(acceptTX)
 
@@ -100,8 +98,8 @@ export default async (
     messageBox: 'coinflip_responses',
     body: {
       action: 'accept',
-      acceptTX,
-      offerTXID: challenge.tx.txid
+      acceptTX: Utils.toUTF8(acceptTX!),
+      offerTXID: parsedOfferTX.id('hex')
     }
   })
 
@@ -117,14 +115,14 @@ export default async (
     const aliceMessages = messages.filter(x => {
       try {
         const body = JSON.parse(x.body)
-        return x.sender === challenge.from && body.offerTXID === challenge.tx.txid
+        return x.sender === challenge.from && body.offerTXID === parsedOfferTX.id('hex')
       } catch (e) {
         return false
       }
     })
     if (aliceMessages.length < 1) continue
     await constants.messageBoxClient.acknowledgeMessage({
-      messageIds: [aliceMessages[0].messageId]
+      messageIds: [String(aliceMessages[0].messageId)]
     })
     const aliceMessage = JSON.parse(aliceMessages[0].body)
     console.log('Got back from Alice!', aliceMessage)
@@ -147,7 +145,7 @@ export default async (
       async (self: Coinflip) => {
         const bsvtx = new bsv.Transaction()
         bsvtx.from({
-          txId: acceptTX.txid,
+          txId: acceptTXID!,
           outputIndex: 0,
           script: nextOutputScript.toHex(),
           satoshis: challenge.amount * 2
@@ -165,11 +163,11 @@ export default async (
             new bsv.crypto.BN(challenge.amount * 2)
           )
         )
-        const SDKSignature = await createSignature({
+        const { signature: SDKSignature } = await constants.walletClient.createSignature({
           protocolID: [0, 'coinflip'],
           keyID: '1',
           counterparty: challenge.from,
-          data: hashbuf
+          data: Array.from(hashbuf)
         })
         const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
         signature.nhashtype = hashType
@@ -182,20 +180,17 @@ export default async (
         )
       }
     )
-    await createAction({
-      inputs: {
-        [acceptTX.txid]: {
-          ...verifyTruthy(acceptTX),
-          outputsToRedeem: [
-            {
-              index: 0,
-              unlockingScript: winScript.toHex()
-            }
-          ]
-        }
-      },
+    await constants.walletClient.createAction({
+      inputBEEF: acceptTX,
+      inputs: [{
+        outpoint: `${acceptTXID}.0`,
+        unlockingScript: winScript.toHex(),
+        inputDescription: 'Win a coin flip'
+      }],
       description: 'You win a coin flip',
-      acceptDelayedBroadcast: false
+      options: {
+        acceptDelayedBroadcast: false
+      }
     })
     return 'you-win'
   }
@@ -208,7 +203,7 @@ export default async (
   const reclaimScript = await reclaimInstance.getUnlockingScript(async (self: Coinflip) => {
     const bsvtx = new bsv.Transaction()
     bsvtx.from({
-      txId: acceptTX.txid,
+      txId: acceptTXID,
       outputIndex: 0,
       script: nextOutputScript.toHex(),
       satoshis: challenge.amount * 2
@@ -228,11 +223,11 @@ export default async (
         new bsv.crypto.BN(challenge.amount * 2)
       )
     )
-    const SDKSignature = await createSignature({
+    const { signature: SDKSignature } = await constants.walletClient.createSignature({
       protocolID: [0, 'coinflip'],
       keyID: '1',
       counterparty: challenge.from,
-      data: hashbuf
+      data: Array.from(hashbuf)
     })
     const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
     signature.nhashtype = hashType
@@ -240,22 +235,19 @@ export default async (
     self.to = { tx: bsvtx, inputIndex: 0 }
     self.bobWinsAutomaticallyAfterDelay(Sig(toByteString(signature.toTxFormat().toString('hex'))))
   })
-  await createAction({
-    inputs: {
-      [acceptTX.txid]: {
-        ...verifyTruthy(acceptTX),
-        outputsToRedeem: [
-          {
-            index: 0,
-            unlockingScript: reclaimScript.toHex(),
-            sequenceNumber: 0xfffffffe
-          }
-        ]
-      }
-    },
+  await constants.walletClient.createAction({
+    inputBEEF: acceptTX,
+    inputs: [{
+      outpoint: `${acceptTXID}.0`,
+      unlockingScript: reclaimScript.toHex(),
+      inputDescription: 'Claiming an aborted coin flip',
+      sequenceNumber: 0xfffffffe
+    }],
     lockTime: challenge.expires + 5,
     description: 'You win a coin flip',
-    acceptDelayedBroadcast: false
+    options: {
+      acceptDelayedBroadcast: false
+    }
   })
   console.log('Recovered coins after non-responsive opponent.')
   return 'you-win'

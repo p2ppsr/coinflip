@@ -2,7 +2,7 @@ import { toByteString, int2ByteString, hash256, PubKey, Sig, bsv } from 'scrypt-
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
 import constants from '../utils/constants'
 import { sleep, verifyTruthy } from '../utils/utils'
-import { AtomicBEEF, Transaction } from '@bsv/sdk'
+import { AtomicBEEF, Transaction, Utils } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (
@@ -57,7 +57,7 @@ export default async (
   await constants.messageBoxClient.sendMessage({
     recipient: bob,
     messageBox: 'coinflip_inbox',
-    body: { choice, offerTX }
+    body: { choice, offerTX: Utils.toUTF8(offerTX!) }
   })
   let rejectionReason: 'rejected' | 'expired' = 'expired'
 
@@ -82,7 +82,7 @@ export default async (
     // If Bob accepts reveal the number else fall through to rejection
     if (bobResponse.action === 'accept') {
       console.log('Alice got acceptance back!', bobResponse)
-      const acceptTX: AtomicBEEF = bobResponse.acceptTX
+      const acceptTX: AtomicBEEF = Utils.toArray(bobResponse.acceptTX, 'utf8')
       const parsedAcceptTX = new bsv.Transaction(
         Transaction.fromAtomicBEEF(acceptTX).toHex()
       )
@@ -117,11 +117,11 @@ export default async (
                 new bsv.crypto.BN(amount * 2)
               )
             )
-            const SDKSignature = await constants.walletClient.createSignature({
+            const { signature: SDKSignature } = await constants.walletClient.createSignature({
               protocolID: [0, 'coinflip'],
               keyID: '1',
               counterparty: bob,
-              data: [...hashbuf]
+              data: Array.from(hashbuf)
             })
             const signature = bsv.crypto.Signature.fromString(
               Buffer.from(SDKSignature).toString('hex')
@@ -136,20 +136,17 @@ export default async (
             )
           }
         )
-        await createAction({
-          inputs: {
-            [acceptTX.txid]: {
-              ...verifyTruthy(acceptTX),
-              outputsToRedeem: [
-                {
-                  index: 0,
-                  unlockingScript: winScript.toHex()
-                }
-              ]
-            }
-          },
+        await constants.walletClient.createAction({
+          inputBEEF: acceptTX,
+          inputs: [{
+            outpoint: `${parsedAcceptTX.id}.0`,
+            unlockingScript: winScript.toHex(),
+            inputDescription: 'Claim coin flip winnings'
+          }],
           description: 'You win a coin flip',
-          acceptDelayedBroadcast: false
+          options: {
+            acceptDelayedBroadcast: false
+          }
         })
       } else {
         outcome = 'they-win'
@@ -159,7 +156,7 @@ export default async (
         recipient: bob,
         messageBox: 'coinflip_winnings',
         body: {
-          offerTXID: offerTX.txid,
+          offerTXID: offerTXID,
           nonce: aliceNonce,
           number: aliceRandomValueZeroOrOne
         }
@@ -170,7 +167,7 @@ export default async (
       rejectionReason = 'rejected'
     }
     await constants.messageBoxClient.acknowledgeMessage({
-      messageIds: [bobsMessages[0].messageId]
+      messageIds: [String(bobsMessages[0].messageId)]
     })
     if (rejectionReason === 'rejected') {
       break

@@ -2,7 +2,7 @@ import IncomingChallenge from './IncomingChallenge'
 import { bsv } from 'scrypt-ts'
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
 import constants from '../utils/constants'
-import { Transaction } from '@bsv/sdk'
+import { Transaction, Utils } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (): Promise<IncomingChallenge[]> => {
@@ -14,7 +14,7 @@ export default async (): Promise<IncomingChallenge[]> => {
     async (chal): Promise<IncomingChallenge | undefined> => {
       try {
         const body = JSON.parse(chal.body)
-        const parsedTX = Transaction.fromAtomicBEEF(body.offerTX)
+        const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'utf8'))
         const instance: Coinflip = Coinflip.fromLockingScript(
           parsedTX.outputs[0].lockingScript.toHex()
         ) as unknown as Coinflip
@@ -27,6 +27,7 @@ export default async (): Promise<IncomingChallenge[]> => {
           expires: Number(instance.timeout)
         }
       } catch (e) {
+        console.error('BOB UNABLE TO PARSE INCOMING CHALLENGE', e)
         await constants.messageBoxClient.acknowledgeMessage({ messageIds: [String(chal.messageId)] })
       }
     }
