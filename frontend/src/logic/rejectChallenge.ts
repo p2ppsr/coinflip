@@ -1,5 +1,5 @@
-import constants from '../utils/constants.js'
-import IncomingChallenge from './IncomingChallenge.js'
+import constants from '../utils/constants'
+import IncomingChallenge from './IncomingChallenge'
 
 export default async (challenge: IncomingChallenge): Promise<void> => {
   await constants.tokenator.acknowledgeMessage({

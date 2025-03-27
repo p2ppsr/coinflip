@@ -1,7 +1,7 @@
 import { toByteString, int2ByteString, hash256, PubKey, Sig, bsv } from 'scrypt-ts'
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
-import constants from '../utils/constants.js'
-import { sleep, verifyTruthy } from '../utils/utils.js'
+import constants from '../utils/constants'
+import { sleep, verifyTruthy } from '../utils/utils'
 import { AtomicBEEF, Transaction } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 

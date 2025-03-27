@@ -1,8 +1,8 @@
 import { toByteString, int2ByteString, hash256, Sig, bsv } from 'scrypt-ts'
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
-import constants from '../utils/constants.js'
-import { sleep, verifyTruthy } from '../utils/utils.js'
-import IncomingChallenge from './IncomingChallenge.js'
+import constants from '../utils/constants'
+import { sleep, verifyTruthy } from '../utils/utils'
+import IncomingChallenge from './IncomingChallenge'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (

@@ -1,11 +1,11 @@
 import IncomingChallenge from './IncomingChallenge'
 import { bsv } from 'scrypt-ts'
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
-import constants from '../utils/constants.js'
+import constants from '../utils/constants'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (): Promise<IncomingChallenge[]> => {
-  const challenges = await constants.tokenator.listMessages({
+  const challenges = await constants.messageBoxClient.listMessages({
     messageBox: 'coinflip_inbox'
   })
 

@@ -1,7 +1,6 @@
-(globalThis as any).process = {}
-
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.js'
+import App from './App'
 import { ThemeProvider, createTheme } from '@mui/material'
 import { ToastContainer, Bounce } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
