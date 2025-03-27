@@ -2,6 +2,7 @@ import IncomingChallenge from './IncomingChallenge'
 import { bsv } from 'scrypt-ts'
 import { Coinflip, CoinflipArtifact } from '@bsv/backend'
 import constants from '../utils/constants'
+import { Transaction } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (): Promise<IncomingChallenge[]> => {
@@ -9,22 +10,27 @@ export default async (): Promise<IncomingChallenge[]> => {
     messageBox: 'coinflip_inbox'
   })
 
-  return challenges.map(
-    (chal): IncomingChallenge => {
-      const body = JSON.parse(chal.body)
-      //   console.log(body)
-      const parsedTX = new bsv.Transaction(body.offerTX.rawTx)
-      const instance: Coinflip = Coinflip.fromLockingScript(
-        parsedTX.outputs[0].script.toHex()
-      )
-      return {
-        id: chal.messageId,
-        from: chal.sender,
-        amount: parsedTX.outputs[0].satoshis,
-        tx: body.offerTX,
-        theirChoice: body.choice,
-        expires: Number(instance.timeout)
+  const transformed = await Promise.all(challenges.map(
+    async (chal): Promise<IncomingChallenge | undefined> => {
+      try {
+        const body = JSON.parse(chal.body)
+        const parsedTX = Transaction.fromAtomicBEEF(body.offerTX)
+        const instance: Coinflip = Coinflip.fromLockingScript(
+          parsedTX.outputs[0].lockingScript.toHex()
+        ) as unknown as Coinflip
+        return {
+          id: String(chal.messageId),
+          from: chal.sender,
+          amount: parsedTX.outputs[0].satoshis!,
+          tx: body.offerTX,
+          theirChoice: body.choice,
+          expires: Number(instance.timeout)
+        }
+      } catch (e) {
+        await constants.messageBoxClient.acknowledgeMessage({ messageIds: [String(chal.messageId)] })
       }
     }
-  )
+  ))
+
+  return transformed.filter(x => typeof x !== 'undefined')
 }

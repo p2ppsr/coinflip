@@ -49,7 +49,8 @@ export default async (
       }
     ],
     options: {
-      acceptDelayedBroadcast: false
+      acceptDelayedBroadcast: false,
+      randomizeOutputs: false
     }
   })
 
@@ -154,7 +155,7 @@ export default async (
         outcome = 'they-win'
       }
       // Alice sends message to Bob
-      await constants.tokenator.sendMessage({
+      await constants.messageBoxClient.sendMessage({
         recipient: bob,
         messageBox: 'coinflip_winnings',
         body: {
@@ -168,7 +169,7 @@ export default async (
     } else {
       rejectionReason = 'rejected'
     }
-    await constants.tokenator.acknowledgeMessage({
+    await constants.messageBoxClient.acknowledgeMessage({
       messageIds: [bobsMessages[0].messageId]
     })
     if (rejectionReason === 'rejected') {
@@ -184,7 +185,7 @@ export default async (
     async (self: Coinflip) => {
       const bsvtx = new bsv.Transaction()
       bsvtx.from({
-        txId: offerTX.txid,
+        txId: offerTXID!,
         outputIndex: 0,
         script: offerScript,
         satoshis: amount
@@ -202,11 +203,11 @@ export default async (
           new bsv.crypto.BN(parseInt(String(amount)))
         )
       )
-      const SDKSignature = await createSignature({
+      const { signature: SDKSignature } = await constants.walletClient.createSignature({
         protocolID: [0, 'coinflip'],
         keyID: '1',
         counterparty: bob,
-        data: hashbuf
+        data: Array.from(hashbuf)
       })
       const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
       signature.nhashtype = hashType
@@ -215,20 +216,17 @@ export default async (
       self.cancelOffer(Sig(toByteString(signature.toTxFormat().toString('hex'))))
     }
   )
-  await createAction({
-    inputs: {
-      [offerTX.txid]: {
-        ...verifyTruthy(offerTX),
-        outputsToRedeem: [
-          {
-            index: 0,
-            unlockingScript: unlockingScript.toHex()
-          }
-        ]
-      }
-    },
+  await constants.walletClient.createAction({
+    inputBEEF: offerTX,
+    inputs: [{
+      outpoint: `${offerTXID}.0`,
+      unlockingScript: unlockingScript.toHex(),
+      inputDescription: 'Return canceled flip back to balance'
+    }],
     description: `Cancel ${rejectionReason} coin flip`,
-    acceptDelayedBroadcast: false
+    options: {
+      acceptDelayedBroadcast: false
+    }
   })
   console.log('Recovered coins after rejection.')
 

@@ -92,10 +92,10 @@ export default async (
   console.log(acceptTX)
 
   // Send the message
-  await constants.tokenator.acknowledgeMessage({
+  await constants.messageBoxClient.acknowledgeMessage({
     messageIds: [challenge.id]
   })
-  await constants.tokenator.sendMessage({
+  await constants.messageBoxClient.sendMessage({
     recipient: challenge.from,
     messageBox: 'coinflip_responses',
     body: {
@@ -111,7 +111,7 @@ export default async (
     await sleep(1000)
     const time = Math.round(Date.now() / 1000)
     if (time > challenge.expires + 3) break
-    const messages = await constants.tokenator.listMessages({
+    const messages = await constants.messageBoxClient.listMessages({
       messageBox: 'coinflip_winnings'
     })
     const aliceMessages = messages.filter(x => {
@@ -123,7 +123,7 @@ export default async (
       }
     })
     if (aliceMessages.length < 1) continue
-    await constants.tokenator.acknowledgeMessage({
+    await constants.messageBoxClient.acknowledgeMessage({
       messageIds: [aliceMessages[0].messageId]
     })
     const aliceMessage = JSON.parse(aliceMessages[0].body)
