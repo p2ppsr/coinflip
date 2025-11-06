@@ -1,5 +1,87 @@
 {
-  "short_name": "Coinflip",
+  "short_name": "CoinFlip",
   "name": "Coinflip",
-  "start_url": "."
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "babbage": {
+    "groupPermissions": {
+      "protocolPermissions": [
+        {
+          "protocolID": [
+            1,
+            "identity key retrieval"
+          ],
+          "counterparty": "",
+          "description": "For identity resolution and verification"
+        },
+        {
+          "protocolID": [
+            8,
+            "3241645161d8"
+          ],
+          "counterparty": "",
+          "description": "To pay for services"
+        },
+        {
+          "protocolID": [
+            1,
+            "messagebox"
+          ],
+          "counterparty": "",
+          "description": "For message delivery and communication"
+        },
+        {
+          "protocolID": [
+            2,
+            "auth message signature"
+          ],
+          "counterparty": "",
+          "description": "For secure communication with MessageBox server"
+        },
+        {
+          "protocolID": [
+            2,
+            "server hmac"
+          ],
+          "counterparty": "self",
+          "description": "For message encryption"
+        },
+        {
+          "protocolID": [
+            2,
+            "identity resolution"
+          ],
+          "counterparty": "",
+          "description": "For resolving public keys into identities"
+        },
+        {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "counterparty": "",
+          "description": "To pay for services"
+        }
+      ],
+      "basketAccess": [
+        {
+          "basket": "contacts",
+          "description": "For identity contacts"
+        },
+        {
+          "basket": "coinflip",
+          "description": "For coin flip challenges and tokens"
+        }
+      ]
+    }
+  }
 }
