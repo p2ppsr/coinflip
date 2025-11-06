@@ -54,131 +54,176 @@ export default async (
     }
   })
 
-  await constants.messageBoxClient.sendMessage({
-    recipient: bob,
-    messageBox: 'coinflip_inbox',
-    body: { choice, offerTX: Utils.toBase64(offerTX!) }
-  })
+  try {
+    await constants.messageBoxClient.sendLiveMessage({
+      recipient: bob,
+      messageBox: 'coinflip_inbox',
+      body: { choice, offerTX: Utils.toBase64(offerTX!) }
+    })
+  } catch (e) {
+    await constants.messageBoxClient.sendMessage({
+      recipient: bob,
+      messageBox: 'coinflip_inbox',
+      body: { choice, offerTX: Utils.toBase64(offerTX!) }
+    })
+  }
   let rejectionReason: 'rejected' | 'expired' = 'expired'
 
   // Wait for Bob to accept
   constants.messageBoxClient.sendNotification(bob, JSON.stringify({url: window.location.href, body: "New Challenger!" }))
+  // Live wait for Bob's response with backlog and timeout
+  await constants.messageBoxClient.initializeConnection()
+  const responsesRoom = 'coinflip_responses'
+  const result = await new Promise<'rejected' | 'expired' | 'you-win' | 'they-win'>(async (resolve) => {
+    let settled = false
+    let pollId: any
+    const settle = (v: 'rejected' | 'expired' | 'you-win' | 'they-win') => {
+      if (settled) return
+      settled = true
+      if (pollId) clearInterval(pollId)
+      resolve(v)
+    }
 
-  for (let i = 0; i < 180; i++) {
-    console.log('Waiting for Bob to accept...')
-    await sleep(1000)
-    const messages = await constants.messageBoxClient.listMessages({
-      messageBox: 'coinflip_responses'
-    })
-
-    const bobsMessages = messages.filter(x => {
+    const processMessage = async (msg: any) => {
       try {
-        const rawBody = (x as any).body
-        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
-        return x.sender === bob && body.offerTXID === offerTXID
-      } catch (e) {
-        return false
-      }
-    })
-    console.log('Bob messages', bobsMessages)
-    if (bobsMessages.length < 1) continue
-    // Assuming the first message
-    const rawBobResponse = (bobsMessages[0] as any).body
-    const bobResponse = typeof rawBobResponse === 'string' ? JSON.parse(rawBobResponse) : rawBobResponse
-    console.log('Bob response', bobResponse)
-    // If Bob accepts reveal the number else fall through to rejection
-    if (bobResponse.action === 'accept') {
-      console.log('Alice got acceptance back!', bobResponse)
-      const acceptTX: AtomicBEEF = Utils.toArray(bobResponse.acceptTX, 'base64')
-      const parsedAcceptTX = new bsv.Transaction(
-        Transaction.fromAtomicBEEF(acceptTX).toHex()
-      )
-      const acceptScript = parsedAcceptTX.outputs[0].script
-      // Assuming the acceptance is in the first output
-      const revelationInstance: Coinflip = Coinflip.fromLockingScript(
-        acceptScript.toHex()
-      ) as Coinflip
-      let outcome: 'you-win' | 'they-win'
-      if (revelationInstance.bobNumber === aliceRandomValueZeroOrOne) {
-        outcome = 'you-win'
-        // Alice wins, takes the coins
-        const winScript = await revelationInstance.getUnlockingScript(
-          async (self: Coinflip) => {
-            const bsvtx = new bsv.Transaction()
-            bsvtx.from({
-              txId: parsedAcceptTX.id,
-              outputIndex: 0,
-              script: acceptScript.toHex(),
-              satoshis: amount * 2
-            })
-            const hashType =
-              bsv.crypto.Signature.SIGHASH_NONE |
-              bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-              bsv.crypto.Signature.SIGHASH_FORKID
-            const hashbuf = bsv.crypto.Hash.sha256(
-              bsv.Transaction.Sighash.sighashPreimage(
-                bsvtx,
-                hashType,
-                0,
-                bsv.Script.fromBuffer(Buffer.from(acceptScript.toHex(), 'hex')),
-                new bsv.crypto.BN(amount * 2)
-              )
-            )
-            const { signature: SDKSignature } = await constants.walletClient.createSignature({
-              protocolID: [0, 'coinflip'],
-              keyID: '1',
-              counterparty: bob,
-              data: Array.from(hashbuf)
-            })
-            const signature = bsv.crypto.Signature.fromString(
-              Buffer.from(SDKSignature).toString('hex')
-            )
-            signature.nhashtype = hashType
+        const raw = (msg as any).body
+        const body = typeof raw === 'string' ? JSON.parse(raw) : raw
+        if (msg.sender !== bob || body.offerTXID !== offerTXID) return
+        await constants.messageBoxClient.acknowledgeMessage({ messageIds: [String(msg.messageId)] })
+        if (body.action === 'accept') {
+          console.log('Alice got acceptance back!', body)
+          const acceptTX: AtomicBEEF = Utils.toArray(body.acceptTX, 'base64')
+          const parsedAcceptTX = new bsv.Transaction(
+            Transaction.fromAtomicBEEF(acceptTX).toHex()
+          )
+          const acceptScript = parsedAcceptTX.outputs[0].script
+          const revelationInstance: Coinflip = Coinflip.fromLockingScript(
+            acceptScript.toHex()
+          ) as Coinflip
+          let outcome: 'you-win' | 'they-win'
+          if (revelationInstance.bobNumber === aliceRandomValueZeroOrOne) {
+            outcome = 'you-win'
+            const winScript = await revelationInstance.getUnlockingScript(
+              async (self: Coinflip) => {
+                const bsvtx = new bsv.Transaction()
+                bsvtx.from({
+                  txId: parsedAcceptTX.id,
+                  outputIndex: 0,
+                  script: acceptScript.toHex(),
+                  satoshis: amount * 2
+                })
+                const hashType =
+                  bsv.crypto.Signature.SIGHASH_NONE |
+                  bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+                  bsv.crypto.Signature.SIGHASH_FORKID
+                const hashbuf = bsv.crypto.Hash.sha256(
+                  bsv.Transaction.Sighash.sighashPreimage(
+                    bsvtx,
+                    hashType,
+                    0,
+                    bsv.Script.fromBuffer(Buffer.from(acceptScript.toHex(), 'hex')),
+                    new bsv.crypto.BN(amount * 2)
+                  )
+                )
+                const { signature: SDKSignature } = await constants.walletClient.createSignature({
+                  protocolID: [0, 'coinflip'],
+                  keyID: '1',
+                  counterparty: bob,
+                  data: Array.from(hashbuf)
+                })
+                const signature = bsv.crypto.Signature.fromString(
+                  Buffer.from(SDKSignature).toString('hex')
+                )
+                signature.nhashtype = hashType
 
-            self.to = { tx: bsvtx, inputIndex: 0 }
-            self.aliceRevealsWinner(
-              Sig(toByteString(signature.toTxFormat().toString('hex'))),
-              aliceNonce,
-              aliceRandomValueZeroOrOne
+                self.to = { tx: bsvtx, inputIndex: 0 }
+                self.aliceRevealsWinner(
+                  Sig(toByteString(signature.toTxFormat().toString('hex'))),
+                  aliceNonce,
+                  aliceRandomValueZeroOrOne
+                )
+              }
             )
+            await constants.walletClient.createAction({
+              inputBEEF: Utils.toArray(acceptTX, 'base64'),
+              inputs: [{
+                outpoint: `${parsedAcceptTX.id}.0`,
+                unlockingScript: winScript.toHex(),
+                inputDescription: 'Claim coin flip winnings'
+              }],
+              description: 'You win a coin flip',
+              options: {
+                acceptDelayedBroadcast: true
+              }
+            })
+          } else {
+            outcome = 'they-win'
           }
-        )
-        await constants.walletClient.createAction({
-          inputBEEF: Utils.toArray(acceptTX, 'base64'),
-          inputs: [{
-            outpoint: `${parsedAcceptTX.id}.0`,
-            unlockingScript: winScript.toHex(),
-            inputDescription: 'Claim coin flip winnings'
-          }],
-          description: 'You win a coin flip',
-          options: {
-            acceptDelayedBroadcast: true
+          try {
+            await constants.messageBoxClient.sendLiveMessage({
+              recipient: bob,
+              messageBox: 'coinflip_winnings',
+              body: {
+                offerTXID: offerTXID,
+                nonce: aliceNonce,
+                number: aliceRandomValueZeroOrOne
+              }
+            })
+          } catch {
+            await constants.messageBoxClient.sendMessage({
+              recipient: bob,
+              messageBox: 'coinflip_winnings',
+              body: {
+                offerTXID: offerTXID,
+                nonce: aliceNonce,
+                number: aliceRandomValueZeroOrOne
+              }
+            })
           }
-        })
-      } else {
-        outcome = 'they-win'
-      }
-      // Alice sends message to Bob
-      await constants.messageBoxClient.sendMessage({
-        recipient: bob,
-        messageBox: 'coinflip_winnings',
-        body: {
-          offerTXID: offerTXID,
-          nonce: aliceNonce,
-          number: aliceRandomValueZeroOrOne
+          console.log('Alice sent revelation back to Bob')
+          settle(outcome)
+        } else {
+          rejectionReason = 'rejected'
+          settle('rejected')
         }
+      } catch (_) {}
+    }
+
+    // Backlog first
+    const backlog = await constants.messageBoxClient.listMessages({ messageBox: responsesRoom })
+    for (const m of backlog) {
+      if (settled) break
+      await processMessage(m)
+    }
+    if (settled) return
+
+    try {
+      await constants.messageBoxClient.listenForLiveMessages({
+        messageBox: responsesRoom,
+        onMessage: processMessage
       })
-      console.log('Alice sent revelation back to Bob')
-      return outcome
-    } else {
-      rejectionReason = 'rejected'
+    } catch (e) {
+      try { await constants.messageBoxClient.disconnectWebSocket() } catch {}
+      // Fallback: poll HTTP every 5s
+      pollId = setInterval(async () => {
+        try {
+          const msgs = await constants.messageBoxClient.listMessages({ messageBox: responsesRoom })
+          for (const m of msgs) {
+            if (settled) break
+            await processMessage(m)
+          }
+        } catch {}
+      }, 5000)
     }
-    await constants.messageBoxClient.acknowledgeMessage({
-      messageIds: [String(bobsMessages[0].messageId)]
-    })
-    if (rejectionReason === 'rejected') {
-      break
-    }
+
+    const timeoutMs = 180000 // 3 minutes
+    setTimeout(() => settle('expired'), timeoutMs)
+  })
+  // Cleanup room subscription
+  try { await constants.messageBoxClient.leaveRoom(responsesRoom) } catch {}
+
+  if (result === 'you-win' || result === 'they-win') {
+    return result
   }
 
   console.log(`Bob fell through: ${rejectionReason}`)

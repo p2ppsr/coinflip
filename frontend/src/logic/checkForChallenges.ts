@@ -5,36 +5,42 @@ import constants from '../utils/constants'
 import { Transaction, Utils } from '@bsv/sdk'
 Coinflip.loadArtifact(CoinflipArtifact)
 
+export const transformPeerMessageToIncomingChallenge = async (
+  chal: any
+): Promise<IncomingChallenge | undefined> => {
+  try {
+    console.log('Bob received challenge', chal)
+    const rawBody = (chal as any).body
+    const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
+    const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'base64'))
+    const instance: Coinflip = Coinflip.fromLockingScript(
+      parsedTX.outputs[0].lockingScript.toHex()
+    ) as unknown as Coinflip
+    return {
+      id: String(chal.messageId),
+      from: chal.sender,
+      amount: parsedTX.outputs[0].satoshis!,
+      tx: body.offerTX,
+      theirChoice: body.choice,
+      expires: Number(instance.timeout)
+    }
+  } catch (e) {
+    console.error('BOB UNABLE TO PARSE INCOMING CHALLENGE', e)
+    await constants.messageBoxClient.acknowledgeMessage({ messageIds: [String(chal.messageId)] })
+  }
+}
+
 export default async (): Promise<IncomingChallenge[]> => {
   const challenges = await constants.messageBoxClient.listMessages({
     messageBox: 'coinflip_inbox'
   })
 
-  const transformed = await Promise.all(challenges.map(
-    async (chal): Promise<IncomingChallenge | undefined> => {
-      try {
-        debugger
-        console.log('Bob received challenge', chal)
-        const rawBody = (chal as any).body
-        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
-        const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'base64'))
-        const instance: Coinflip = Coinflip.fromLockingScript(
-          parsedTX.outputs[0].lockingScript.toHex()
-        ) as unknown as Coinflip
-        return {
-          id: String(chal.messageId),
-          from: chal.sender,
-          amount: parsedTX.outputs[0].satoshis!,
-          tx: body.offerTX,
-          theirChoice: body.choice,
-          expires: Number(instance.timeout)
-        }
-      } catch (e) {
-        console.error('BOB UNABLE TO PARSE INCOMING CHALLENGE', e)
-        await constants.messageBoxClient.acknowledgeMessage({ messageIds: [String(chal.messageId)] })
-      }
-    }
-  ))
+  const transformed = await Promise.all(
+    challenges.map(async (chal): Promise<IncomingChallenge | undefined> => {
+      return await transformPeerMessageToIncomingChallenge(chal)
+    })
+  )
 
   return transformed.filter(x => typeof x !== 'undefined')
 }
+

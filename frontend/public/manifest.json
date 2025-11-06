@@ -57,7 +57,7 @@
         },
         {
           "protocolID": [
-            2,
+            1,
             "identity resolution"
           ],
           "counterparty": "",
@@ -70,6 +70,14 @@
           ],
           "counterparty": "",
           "description": "To pay for services"
+        },
+        {
+          "protocolID": [
+            1,
+            "contact"
+          ],
+          "counterparty": "self",
+          "description": "To contact other users"
         }
       ],
       "basketAccess": [

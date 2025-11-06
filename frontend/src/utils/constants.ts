@@ -20,7 +20,8 @@ if (
     walletClient,
     boxURL: 'https://messagebox.babbage.systems',
     messageBoxClient: new MessageBoxClient({
-      walletClient
+      walletClient,
+      host: 'https://messagebox.babbage.systems'
     })
   }
 } else {
@@ -29,7 +30,8 @@ if (
     walletClient,
     boxURL: 'https://messagebox.babbage.systems',
     messageBoxClient: new MessageBoxClient({
-      walletClient
+      walletClient,
+      host: 'https://messagebox.babbage.systems'
     })
   }
 }

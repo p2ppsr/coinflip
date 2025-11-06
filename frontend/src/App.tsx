@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { createChallenge, checkForChallenges, acceptChallenge, rejectChallenge, IncomingChallenge } from './logic/index'
+import { createChallenge, acceptChallenge, rejectChallenge, IncomingChallenge } from './logic/index'
 import { Typography, TextField, Button, IconButton, CircularProgress, InputAdornment } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import babbageLogo from './assets/babbageLogo.png'
@@ -12,6 +12,7 @@ import { theme } from '.'
 import constants from './utils/constants'
 import Flip from './components/Flip'
 import useAsyncEffect from 'use-async-effect'
+import { transformPeerMessageToIncomingChallenge } from './logic/checkForChallenges'
 
 const useStyles = makeStyles({
   '@global body': {
@@ -62,6 +63,9 @@ const App = () => {
   const [loading, setLoading] = useState(false)
   const classes = useStyles()
   const [amountInSats, setAmountInSats] = useState<number | undefined>(undefined)
+  const [connectionMode, setConnectionMode] = useState<'connecting' | 'live' | 'polling'>('connecting')
+  const [clientReady, setClientReady] = useState(false)
+  const [connectionAttempt, setConnectionAttempt] = useState(0)
 
   const handleChallenge = (side: 'heads' | 'tails') => async () => {
     if (typeof amountInSats === 'undefined') {
@@ -131,24 +135,81 @@ const App = () => {
   }
 
   useEffect(() => {
-    if (state === 'start' || state === 'waiting') {
-      let interval = setInterval(async () => {
-        try {
-          const results = await checkForChallenges()
-          setIncomingChallenges(results)
-        } catch (e) {
-          console.error('OPERATIONS ERROR FOLLOWS:')
-          console.error(e)
+    (async () => {
+      try {
+        await constants.walletClient.waitForAuthentication()
+        await constants.messageBoxClient.init()
+        setClientReady(true)
+      } catch (e) {
+        console.error(e)
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    let canceled = false
+    let pollInterval: any
+    const room = 'coinflip_inbox'
+    const setup = async () => {
+      try {
+        if (!clientReady) return
+        if (!(state === 'start' || state === 'waiting')) {
+          if (state === 'flipping' || state === 'you-win' || state === 'they-win') {
+            setIncomingChallenges([])
+          }
+          try { await constants.messageBoxClient.leaveRoom(room) } catch {}
+          return
         }
-      }, 1000)
-      return () => {
-        clearInterval(interval)
+
+        try {
+          await constants.messageBoxClient.initializeConnection()
+          const backlog = await constants.messageBoxClient.listMessages({ messageBox: room })
+          if (canceled) return
+          const parsed = (await Promise.all(backlog.map(m => transformPeerMessageToIncomingChallenge(m)))).filter(Boolean) as IncomingChallenge[]
+          setIncomingChallenges(parsed)
+          await constants.messageBoxClient.listenForLiveMessages({
+            messageBox: room,
+            onMessage: async (msg) => {
+              const transformed = await transformPeerMessageToIncomingChallenge(msg)
+              if (!transformed) return
+              setIncomingChallenges(prev => {
+                if (prev.some(x => x.id === transformed.id)) return prev
+                return [...prev, transformed]
+              })
+            }
+          })
+          setConnectionMode('live')
+        } catch (e) {
+          try { await constants.messageBoxClient.disconnectWebSocket() } catch {}
+          setConnectionMode('polling')
+          toast.warn('Live updates unavailable. Using fallback.')
+          pollInterval = setInterval(async () => {
+            try {
+              const messages = await constants.messageBoxClient.listMessages({ messageBox: room })
+              if (canceled) return
+              const parsed = (await Promise.all(messages.map(m => transformPeerMessageToIncomingChallenge(m)))).filter(Boolean) as IncomingChallenge[]
+              setIncomingChallenges(prev => {
+                const map = new Map(prev.map(p => [p.id, p]))
+                for (const m of parsed) map.set(m.id, m)
+                return Array.from(map.values())
+              })
+            } catch (err) {
+              console.error(err)
+            }
+          }, 5000)
+        }
+      } catch (e) {
+        console.error('OPERATIONS ERROR FOLLOWS:')
+        console.error(e)
       }
     }
-    if (state === 'flipping' || state === 'you-win' || state === 'they-win') {
-      setIncomingChallenges([])
+    setup()
+    return () => {
+      canceled = true
+      if (pollInterval) clearInterval(pollInterval)
+      constants.messageBoxClient.leaveRoom(room).catch(() => {})
     }
-  }, [state])
+  }, [state, clientReady, connectionAttempt])
 
   const handleAmountChange = useCallback(async (event: any) => {
     const input = event.target.value.replace(/[^0-9.]/g, '')
@@ -311,6 +372,18 @@ const App = () => {
           style={{ borderBottom: '1px solid rgba(255,255,255,0.2', paddingBottom: '1rem', marginBottom: '2em' }}
         />
       </div>
+      {connectionMode !== 'live' && (
+        <div>
+          <Typography align='center' color={connectionMode === 'polling' ? 'secondary' : 'textSecondary'} paragraph>
+            {connectionMode === 'connecting' ? 'Connecting to live updates…' : 'Live updates unavailable. Using fallback.'}
+          </Typography>
+          {connectionMode === 'polling' && (
+            <Button variant='outlined' size='small' onClick={() => { setConnectionMode('connecting'); setConnectionAttempt(v => v + 1) }}>
+              Retry live updates
+            </Button>
+          )}
+        </div>
+      )}
       {stateUI}
     </center>
   )
