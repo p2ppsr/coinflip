@@ -93,6 +93,16 @@ export default async (
   await constants.messageBoxClient.acknowledgeMessage({
     messageIds: [challenge.id]
   })
+  console.log("trying to accept with params:", {
+    recipient: challenge.from,
+    messageBox: 'coinflip_responses',
+    body: {
+      action: 'accept',
+      acceptTX: Utils.toBase64(acceptTX!),
+      offerTXID: parsedOfferTX.id('hex')
+    }
+  })
+
   await constants.messageBoxClient.sendMessage({
     recipient: challenge.from,
     messageBox: 'coinflip_responses',
@@ -114,7 +124,8 @@ export default async (
     })
     const aliceMessages = messages.filter(x => {
       try {
-        const body = JSON.parse(x.body)
+        const rawBody = (x as any).body
+        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
         return x.sender === challenge.from && body.offerTXID === parsedOfferTX.id('hex')
       } catch (e) {
         return false
@@ -124,7 +135,8 @@ export default async (
     await constants.messageBoxClient.acknowledgeMessage({
       messageIds: [String(aliceMessages[0].messageId)]
     })
-    const aliceMessage = JSON.parse(aliceMessages[0].body)
+    const rawAliceMessage = (aliceMessages[0] as any).body
+    const aliceMessage = typeof rawAliceMessage === 'string' ? JSON.parse(rawAliceMessage) : rawAliceMessage
     console.log('Got back from Alice!', aliceMessage)
     const revelationInstance: Coinflip = Coinflip.fromLockingScript(
       nextOutputScript.toHex()
@@ -202,8 +214,9 @@ export default async (
   ) as Coinflip
   const reclaimScript = await reclaimInstance.getUnlockingScript(async (self: Coinflip) => {
     const bsvtx = new bsv.Transaction()
+    const ensuredAcceptTXID = acceptTXID || Transaction.fromAtomicBEEF(Utils.toArray(acceptTX!, 'base64')).id('hex')
     bsvtx.from({
-      txId: acceptTXID,
+      txId: ensuredAcceptTXID,
       outputIndex: 0,
       script: nextOutputScript.toHex(),
       satoshis: challenge.amount * 2

@@ -19,10 +19,10 @@
       ]
     },
     {
-      "name": "babbage",
+      "name": "chabbage",
       "provider": "CARS",
-      "CARSCloudURL": "https://cars.babbage.systems",
-      "projectID": "fd7584e119126975654df9381a9d7fc1",
+      "CARSCloudURL": "https://cars.metanet.club",
+      "projectID": "d2774ff13ed6566f4aa951c25472de14",
       "network": "mainnet",
       "deploy": [
         "frontend"

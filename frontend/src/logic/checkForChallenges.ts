@@ -13,7 +13,10 @@ export default async (): Promise<IncomingChallenge[]> => {
   const transformed = await Promise.all(challenges.map(
     async (chal): Promise<IncomingChallenge | undefined> => {
       try {
-        const body = JSON.parse(chal.body)
+        debugger
+        console.log('Bob received challenge', chal)
+        const rawBody = (chal as any).body
+        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
         const parsedTX = Transaction.fromAtomicBEEF(Utils.toArray(body.offerTX, 'base64'))
         const instance: Coinflip = Coinflip.fromLockingScript(
           parsedTX.outputs[0].lockingScript.toHex()

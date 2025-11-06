@@ -5,7 +5,7 @@
   "dependencies": {
     "@bsv/backend": "file:../backend",
     "@bsv/identity-react": "^1.0.6",
-    "@bsv/p2p": "^1.0.9",
+    "@bsv/message-box-client": "^1.4.3",
     "@bsv/sdk": "^1.4.9",
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",

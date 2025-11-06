@@ -62,23 +62,30 @@ export default async (
   let rejectionReason: 'rejected' | 'expired' = 'expired'
 
   // Wait for Bob to accept
+  constants.messageBoxClient.sendNotification(bob, JSON.stringify({url: window.location.href, body: "New Challenger!" }))
+
   for (let i = 0; i < 180; i++) {
     console.log('Waiting for Bob to accept...')
     await sleep(1000)
     const messages = await constants.messageBoxClient.listMessages({
       messageBox: 'coinflip_responses'
     })
+
     const bobsMessages = messages.filter(x => {
       try {
-        const body = JSON.parse(x.body)
+        const rawBody = (x as any).body
+        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody
         return x.sender === bob && body.offerTXID === offerTXID
       } catch (e) {
         return false
       }
     })
+    console.log('Bob messages', bobsMessages)
     if (bobsMessages.length < 1) continue
     // Assuming the first message
-    const bobResponse = JSON.parse(bobsMessages[0].body)
+    const rawBobResponse = (bobsMessages[0] as any).body
+    const bobResponse = typeof rawBobResponse === 'string' ? JSON.parse(rawBobResponse) : rawBobResponse
+    console.log('Bob response', bobResponse)
     // If Bob accepts reveal the number else fall through to rejection
     if (bobResponse.action === 'accept') {
       console.log('Alice got acceptance back!', bobResponse)

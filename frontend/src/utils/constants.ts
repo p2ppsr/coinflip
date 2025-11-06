@@ -1,4 +1,4 @@
-import { MessageBoxClient } from '@bsv/p2p'
+import { MessageBoxClient } from '@bsv/message-box-client'
 import { WalletClient } from '@bsv/sdk'
 
 const walletClient = new WalletClient()
@@ -20,7 +20,6 @@ if (
     walletClient,
     boxURL: 'https://messagebox.babbage.systems',
     messageBoxClient: new MessageBoxClient({
-      host: 'https://messagebox.babbage.systems',
       walletClient
     })
   }
@@ -30,7 +29,6 @@ if (
     walletClient,
     boxURL: 'https://messagebox.babbage.systems',
     messageBoxClient: new MessageBoxClient({
-      host: 'https://messagebox.babbage.systems',
       walletClient
     })
   }
