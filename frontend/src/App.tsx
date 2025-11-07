@@ -166,12 +166,23 @@ const App = () => {
           const backlog = await constants.messageBoxClient.listMessages({ messageBox: room })
           if (canceled) return
           const parsed = (await Promise.all(backlog.map(m => transformPeerMessageToIncomingChallenge(m)))).filter(Boolean) as IncomingChallenge[]
-          setIncomingChallenges(parsed)
+          const nowSec = Math.round(Date.now() / 1000)
+          const expired = parsed.filter(c => nowSec > (c.expires + 3))
+          const active = parsed.filter(c => nowSec <= (c.expires + 3))
+          if (expired.length) {
+            try { await constants.messageBoxClient.acknowledgeMessage({ messageIds: expired.map(e => e.id) }) } catch {}
+          }
+          setIncomingChallenges(active)
           await constants.messageBoxClient.listenForLiveMessages({
             messageBox: room,
             onMessage: async (msg) => {
               const transformed = await transformPeerMessageToIncomingChallenge(msg)
               if (!transformed) return
+              const nowSec = Math.round(Date.now() / 1000)
+              if (nowSec > (transformed.expires + 3)) {
+                try { await constants.messageBoxClient.acknowledgeMessage({ messageIds: [transformed.id] }) } catch {}
+                return
+              }
               setIncomingChallenges(prev => {
                 if (prev.some(x => x.id === transformed.id)) return prev
                 return [...prev, transformed]
@@ -188,10 +199,17 @@ const App = () => {
               const messages = await constants.messageBoxClient.listMessages({ messageBox: room })
               if (canceled) return
               const parsed = (await Promise.all(messages.map(m => transformPeerMessageToIncomingChallenge(m)))).filter(Boolean) as IncomingChallenge[]
+              const nowSec = Math.round(Date.now() / 1000)
+              const expired = parsed.filter(c => nowSec > (c.expires + 3))
+              const active = parsed.filter(c => nowSec <= (c.expires + 3))
+              if (expired.length) {
+                try { await constants.messageBoxClient.acknowledgeMessage({ messageIds: expired.map(e => e.id) }) } catch {}
+              }
               setIncomingChallenges(prev => {
                 const map = new Map(prev.map(p => [p.id, p]))
-                for (const m of parsed) map.set(m.id, m)
-                return Array.from(map.values())
+                for (const m of active) map.set(m.id, m)
+                // also purge any in prev that are now expired
+                return Array.from(map.values()).filter(c => nowSec <= (c.expires + 3))
               })
             } catch (err) {
               console.error(err)
@@ -223,6 +241,22 @@ const App = () => {
       }
     }
   }, [])
+
+  // Periodically remove expired challenges from UI and acknowledge them
+  useEffect(() => {
+    if (!(state === 'start' || state === 'waiting')) return
+    const interval = setInterval(() => {
+      const nowSec = Math.round(Date.now() / 1000)
+      setIncomingChallenges(prev => {
+        const expired = prev.filter(c => nowSec > (c.expires + 3))
+        if (expired.length) {
+          constants.messageBoxClient.acknowledgeMessage({ messageIds: expired.map(e => e.id) }).catch(() => {})
+        }
+        return prev.filter(c => nowSec <= (c.expires + 3))
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [state])
 
   const incomingChallengesGrid = <div className={classes.challenges_grid}>
     <Typography color='primary' variant='h6'><b>Opponent</b></Typography>

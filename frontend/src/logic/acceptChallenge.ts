@@ -4,6 +4,7 @@ import constants from '../utils/constants'
 import { sleep, verifyTruthy } from '../utils/utils'
 import IncomingChallenge from './IncomingChallenge'
 import { Transaction, Utils } from '@bsv/sdk'
+import { toast } from 'react-toastify'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (
@@ -103,6 +104,8 @@ export default async (
     }
   })
 
+  const offerTXIDHex = parsedOfferTX.id('hex')
+  const acceptanceMessageId = `accept:${offerTXIDHex}`
   try {
     await constants.messageBoxClient.sendLiveMessage({
       recipient: challenge.from,
@@ -110,19 +113,60 @@ export default async (
       body: {
         action: 'accept',
         acceptTX: Utils.toBase64(acceptTX!),
-        offerTXID: parsedOfferTX.id('hex')
-      }
+        offerTXID: offerTXIDHex
+      },
+      messageId: acceptanceMessageId
     })
   } catch (_) {
-    await constants.messageBoxClient.sendMessage({
-      recipient: challenge.from,
-      messageBox: 'coinflip_responses',
-      body: {
-        action: 'accept',
-        acceptTX: Utils.toBase64(acceptTX!),
-        offerTXID: parsedOfferTX.id('hex')
-      }
-    })
+    try {
+      await constants.messageBoxClient.sendMessage({
+        recipient: challenge.from,
+        messageBox: 'coinflip_responses',
+        body: {
+          action: 'accept',
+          acceptTX: Utils.toBase64(acceptTX!),
+          offerTXID: offerTXIDHex
+        },
+        messageId: acceptanceMessageId
+      })
+    } catch (err) {
+      toast.warn('Could not deliver your acceptance. Your opponent may not see it. Retrying in background…', { autoClose: 5000 })
+      // Try limited background retries
+      ;(async () => {
+        for (let i = 0; i < 5; i++) {
+          try {
+            await constants.messageBoxClient.sendLiveMessage({
+              recipient: challenge.from,
+              messageBox: 'coinflip_responses',
+              body: {
+                action: 'accept',
+                acceptTX: Utils.toBase64(acceptTX!),
+                offerTXID: offerTXIDHex
+              },
+              messageId: acceptanceMessageId
+            })
+            break
+          } catch {
+            try {
+              await constants.messageBoxClient.sendMessage({
+                recipient: challenge.from,
+                messageBox: 'coinflip_responses',
+                body: {
+                  action: 'accept',
+                  acceptTX: Utils.toBase64(acceptTX!),
+                  offerTXID: offerTXIDHex
+                },
+                messageId: acceptanceMessageId
+              })
+              break
+            } catch {}
+          }
+          await sleep(3000)
+        }
+      })()
+      // Ping a notification as a hint
+      try { await constants.messageBoxClient.sendNotification(challenge.from, JSON.stringify({ url: window.location.href, body: 'Challenge accepted' })) } catch {}
+    }
   }
 
   // Wait for Alice to respond via live messages (with backlog and timeout)
@@ -157,59 +201,68 @@ export default async (
           return
         }
         // Bob can claim his winnings
-        const winScript = await revelationInstance.getUnlockingScript(
-          async (self: Coinflip) => {
-            const bsvtx = new bsv.Transaction()
-            bsvtx.from({
-              txId: acceptTXID!,
-              outputIndex: 0,
-              script: nextOutputScript.toHex(),
-              satoshis: challenge.amount * 2
-            })
-            const hashType =
-              bsv.crypto.Signature.SIGHASH_NONE |
-              bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-              bsv.crypto.Signature.SIGHASH_FORKID
-            const hashbuf = bsv.crypto.Hash.sha256(
-              bsv.Transaction.Sighash.sighashPreimage(
-                bsvtx,
-                hashType,
-                0,
-                bsv.Script.fromBuffer(Buffer.from(nextOutputScript.toHex(), 'hex')),
-                new bsv.crypto.BN(challenge.amount * 2)
+        try {
+          const winScript = await revelationInstance.getUnlockingScript(
+            async (self: Coinflip) => {
+              const bsvtx = new bsv.Transaction()
+              bsvtx.from({
+                txId: acceptTXID!,
+                outputIndex: 0,
+                script: nextOutputScript.toHex(),
+                satoshis: challenge.amount * 2
+              })
+              const hashType =
+                bsv.crypto.Signature.SIGHASH_NONE |
+                bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+                bsv.crypto.Signature.SIGHASH_FORKID
+              const hashbuf = bsv.crypto.Hash.sha256(
+                bsv.Transaction.Sighash.sighashPreimage(
+                  bsvtx,
+                  hashType,
+                  0,
+                  bsv.Script.fromBuffer(Buffer.from(nextOutputScript.toHex(), 'hex')),
+                  new bsv.crypto.BN(challenge.amount * 2)
+                )
               )
-            )
-            const { signature: SDKSignature } = await constants.walletClient.createSignature({
-              protocolID: [0, 'coinflip'],
-              keyID: '1',
-              counterparty: challenge.from,
-              data: Array.from(hashbuf)
-            })
-            const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
-            signature.nhashtype = hashType
+              const { signature: SDKSignature } = await constants.walletClient.createSignature({
+                protocolID: [0, 'coinflip'],
+                keyID: '1',
+                counterparty: challenge.from,
+                data: Array.from(hashbuf)
+              })
+              const signature = bsv.crypto.Signature.fromString(Buffer.from(SDKSignature).toString('hex'))
+              signature.nhashtype = hashType
 
-            self.to = { tx: bsvtx, inputIndex: 0 }
-            self.aliceRevealsWinner(
-              Sig(toByteString(signature.toTxFormat().toString('hex'))),
-              toByteString(aliceMessage.nonce),
-              BigInt(aliceMessage.number)
-            )
-          }
-        )
-        await constants.walletClient.createAction({
-          inputBEEF: Utils.toArray(acceptTX, 'base64'),
-          inputs: [{
-            outpoint: `${acceptTXID}.0`,
-            unlockingScript: winScript.toHex(),
-            inputDescription: 'Win a coin flip'
-          }],
-          description: 'You win a coin flip',
-          options: {
-            acceptDelayedBroadcast: true
-          }
-        })
-        settle('you-win')
-      } catch (_) {}
+              self.to = { tx: bsvtx, inputIndex: 0 }
+              self.aliceRevealsWinner(
+                Sig(toByteString(signature.toTxFormat().toString('hex'))),
+                toByteString(aliceMessage.nonce),
+                BigInt(aliceMessage.number)
+              )
+            }
+          )
+          await constants.walletClient.createAction({
+            inputBEEF: Utils.toArray(acceptTX, 'base64'),
+            inputs: [{
+              outpoint: `${acceptTXID}.0`,
+              unlockingScript: winScript.toHex(),
+              inputDescription: 'Win a coin flip'
+            }],
+            description: 'You win a coin flip',
+            options: {
+              acceptDelayedBroadcast: true
+            }
+          })
+          settle('you-win')
+        } catch (err) {
+          console.error('Failed to claim winnings automatically', err)
+          toast.error('You won, but claiming the winnings failed. Please try again or refresh.', { autoClose: 6000 })
+          // Still show the correct outcome so both sides update
+          settle('you-win')
+        }
+      } catch (outerErr) {
+        console.error('Error processing revelation message', outerErr)
+      }
     }
 
     // Backlog first
@@ -227,17 +280,18 @@ export default async (
       })
     } catch (e) {
       try { await constants.messageBoxClient.disconnectWebSocket() } catch {}
-      // Fallback to HTTP polling
-      pollId = setInterval(async () => {
-        try {
-          const msgs = await constants.messageBoxClient.listMessages({ messageBox: winningsRoom })
-          for (const m of msgs) {
-            if (settled) break
-            await processAlice(m)
-          }
-        } catch {}
-      }, 5000)
     }
+
+    // Guard: Poll HTTP every 3s even if WS is attached
+    pollId = setInterval(async () => {
+      try {
+        const msgs = await constants.messageBoxClient.listMessages({ messageBox: winningsRoom })
+        for (const m of msgs) {
+          if (settled) break
+          await processAlice(m)
+        }
+      } catch {}
+    }, 3000)
 
     const nowSec = Math.round(Date.now() / 1000)
     const msLeft = Math.max(0, (challenge.expires + 3 - nowSec) * 1000)

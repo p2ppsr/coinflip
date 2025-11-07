@@ -3,6 +3,7 @@ import { Coinflip, CoinflipArtifact } from '@bsv/backend'
 import constants from '../utils/constants'
 import { sleep, verifyTruthy } from '../utils/utils'
 import { AtomicBEEF, Transaction, Utils } from '@bsv/sdk'
+import { toast } from 'react-toastify'
 Coinflip.loadArtifact(CoinflipArtifact)
 
 export default async (
@@ -159,29 +160,44 @@ export default async (
           } else {
             outcome = 'they-win'
           }
-          try {
-            await constants.messageBoxClient.sendLiveMessage({
-              recipient: bob,
-              messageBox: 'coinflip_winnings',
-              body: {
-                offerTXID: offerTXID,
-                nonce: aliceNonce,
-                number: aliceRandomValueZeroOrOne
-              }
-            })
-          } catch {
-            await constants.messageBoxClient.sendMessage({
-              recipient: bob,
-              messageBox: 'coinflip_winnings',
-              body: {
-                offerTXID: offerTXID,
-                nonce: aliceNonce,
-                number: aliceRandomValueZeroOrOne
-              }
-            })
-          }
-          console.log('Alice sent revelation back to Bob')
+          // Update local UI immediately regardless of network send result
           settle(outcome)
+          // Fire-and-forget: attempt to notify Bob of the revelation
+          ;(async () => {
+            try {
+              const winningsMessageId = `winnings:${offerTXID}`
+              await constants.messageBoxClient.sendLiveMessage({
+                recipient: bob,
+                messageBox: 'coinflip_winnings',
+                body: {
+                  offerTXID: offerTXID,
+                  nonce: aliceNonce,
+                  number: aliceRandomValueZeroOrOne
+                },
+                messageId: winningsMessageId
+              })
+            } catch {
+              try {
+                const winningsMessageId = `winnings:${offerTXID}`
+                await constants.messageBoxClient.sendMessage({
+                  recipient: bob,
+                  messageBox: 'coinflip_winnings',
+                  body: {
+                    offerTXID: offerTXID,
+                    nonce: aliceNonce,
+                    number: aliceRandomValueZeroOrOne
+                  },
+                  messageId: winningsMessageId
+                })
+              } catch {
+                toast.warn('Could not notify your opponent about the result. They may not see it immediately.', { autoClose: 5000 })
+              }
+            }
+            // Nudge the opponent via notification as a hint
+            try { await constants.messageBoxClient.sendNotification(bob, JSON.stringify({ url: window.location.href, body: 'Coin flip result available' })) } catch {}
+            console.log('Alice attempted to send revelation back to Bob')
+          })()
+          
         } else {
           rejectionReason = 'rejected'
           settle('rejected')
@@ -202,19 +218,20 @@ export default async (
         messageBox: responsesRoom,
         onMessage: processMessage
       })
-    } catch (e) {
+    } catch (_) {
       try { await constants.messageBoxClient.disconnectWebSocket() } catch {}
-      // Fallback: poll HTTP every 5s
-      pollId = setInterval(async () => {
-        try {
-          const msgs = await constants.messageBoxClient.listMessages({ messageBox: responsesRoom })
-          for (const m of msgs) {
-            if (settled) break
-            await processMessage(m)
-          }
-        } catch {}
-      }, 5000)
     }
+
+    // Guard: periodic HTTP poll even if WS listener attached
+    pollId = setInterval(async () => {
+      try {
+        const msgs = await constants.messageBoxClient.listMessages({ messageBox: responsesRoom })
+        for (const m of msgs) {
+          if (settled) break
+          await processMessage(m)
+        }
+      } catch {}
+    }, 3000)
 
     const timeoutMs = 180000 // 3 minutes
     setTimeout(() => settle('expired'), timeoutMs)
